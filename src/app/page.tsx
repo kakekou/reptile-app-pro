@@ -472,21 +472,24 @@ export default function WeeklyCareMatrixPage() {
   }
 
   const handleSave = async () => {
-    console.log('handleSave called', { selectedId, modalDate, conditionInput, feedingInputs, poopInput, urineInput, shedInput, weightInput, toggleCares, memoInput });
-    if (!selectedId || !modalDate) {
-      console.log('handleSave early return: selectedId or modalDate is falsy');
-      return;
-    }
+    if (!selectedId || !modalDate) return;
     setSaving(true);
 
     try {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('Save error: not authenticated');
+        return;
+      }
+      const userId = user.id;
       const promises: PromiseLike<any>[] = [];
 
       // 1. 調子 → health_logs
       if (conditionInput) {
         promises.push(
           supabase.from('health_logs').insert({
+            user_id: userId,
             individual_id: selectedId,
             logged_on: modalDate,
             condition: conditionInput,
@@ -499,44 +502,21 @@ export default function WeeklyCareMatrixPage() {
       for (const fi of feedingInputs) {
         promises.push(
           supabase.from('feedings').insert({
+            user_id: userId,
             individual_id: selectedId,
             fed_at: modalDate + 'T12:00:00',
             food_type: fi.foodType,
             quantity: fi.quantity,
-            dusting: fi.dusting,
             refused: fi.refused,
           }).select().then(r => r)
         );
       }
 
-      // 3. フン → care_logs
-      if (poopInput) {
-        promises.push(
-          supabase.from('care_logs').insert({
-            individual_id: selectedId,
-            logged_on: modalDate,
-            log_type: 'poop',
-            value: poopInput,
-          }).select().then(r => r)
-        );
-      }
-
-      // 4. 尿 → care_logs
-      if (urineInput) {
-        promises.push(
-          supabase.from('care_logs').insert({
-            individual_id: selectedId,
-            logged_on: modalDate,
-            log_type: 'urine',
-            value: urineInput,
-          }).select().then(r => r)
-        );
-      }
-
-      // 5. 脱皮 → sheds
+      // 3. 脱皮 → sheds
       if (shedInput) {
         promises.push(
           supabase.from('sheds').insert({
+            user_id: userId,
             individual_id: selectedId,
             shed_on: modalDate,
             completeness: shedInput === '脱皮' ? '完全' : '不完全',
@@ -544,10 +524,11 @@ export default function WeeklyCareMatrixPage() {
         );
       }
 
-      // 6. 体重 → measurements
+      // 4. 体重 → measurements
       if (weightInput && parseFloat(weightInput) > 0) {
         promises.push(
           supabase.from('measurements').insert({
+            user_id: userId,
             individual_id: selectedId,
             measured_on: modalDate,
             weight_g: parseFloat(weightInput),
@@ -556,29 +537,50 @@ export default function WeeklyCareMatrixPage() {
         );
       }
 
-      // 7. トグル系ケア → care_logs（各タイプごとに1レコード）
-      for (const [careType, isOn] of Object.entries(toggleCares)) {
-        if (!isOn) continue;
+      // 5. メモ → memos
+      if (memoInput) {
         promises.push(
-          supabase.from('care_logs').insert({
+          supabase.from('memos').insert({
+            user_id: userId,
             individual_id: selectedId,
-            logged_on: modalDate,
-            log_type: careType,
-            value: careType === 'memo' ? memoInput : null,
+            title: modalDate,
+            body: memoInput,
           }).select().then(r => r)
         );
       }
 
-      // 8. メモ（トグルに含まれていない場合でも、テキストがあれば保存）
-      if (memoInput && !toggleCares['memo']) {
+      // フン・尿・トグル系ケアはDB上にcare_logsテーブルが存在しないため
+      // 現時点ではhealth_logsのnotesに記録する（将来care_logsテーブル追加時に移行）
+      const careNotes: string[] = [];
+      if (poopInput) careNotes.push(`フン: ${poopInput}`);
+      if (urineInput) careNotes.push(`尿酸: ${urineInput}`);
+      for (const [careType, isOn] of Object.entries(toggleCares)) {
+        if (isOn && careType !== 'memo') careNotes.push(careType);
+      }
+      // 調子が未入力でもケアノートがある場合はhealth_logsに保存
+      if (careNotes.length > 0 && !conditionInput) {
         promises.push(
-          supabase.from('care_logs').insert({
+          supabase.from('health_logs').insert({
+            user_id: userId,
             individual_id: selectedId,
             logged_on: modalDate,
-            log_type: 'memo',
-            value: memoInput,
+            condition: '普通',
+            symptoms: [],
+            notes: careNotes.join(', '),
           }).select().then(r => r)
         );
+      } else if (careNotes.length > 0 && conditionInput) {
+        // 調子も入力済みの場合、既に上で挿入したhealth_logsのnotesを更新できないので
+        // 別途notesをpromisesの最初のhealth_logsに含める形に修正
+        // → 上の調子insertにnotesを含めるため、promisesの先頭を差し替え
+        promises[0] = supabase.from('health_logs').insert({
+          user_id: userId,
+          individual_id: selectedId,
+          logged_on: modalDate,
+          condition: conditionInput,
+          symptoms: [],
+          notes: careNotes.join(', '),
+        }).select().then(r => r);
       }
 
       const results = await Promise.all(promises);
