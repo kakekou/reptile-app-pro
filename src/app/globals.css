@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
+/* ============================================================
+   ReptiLog - Apple Health 風ダークテーマ
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── 背景 ── */
+  --bg-primary:    #000000;
+  --bg-secondary:  #1c1c1e;
+  --bg-tertiary:   #2c2c2e;
+  --bg-elevated:   #1c1c1e;
+
+  /* ── テキスト ── */
+  --text-primary:    #ffffff;
+  --text-secondary:  #ababab;
+  --text-tertiary:   #6e6e73;
+
+  /* ── アクセントカラー ── */
+  --accent-green:   #30d158;
+  --accent-blue:    #0a84ff;
+  --accent-red:     #ff453a;
+  --accent-orange:  #ff9f0a;
+  --accent-purple:  #bf5af2;
+  --accent-teal:    #64d2ff;
+
+  /* ── カード ── */
+  --card-radius:     20px;
+  --card-radius-sm:  14px;
+
+  /* ── 基本 ── */
+  --background:  var(--bg-primary);
+  --foreground:  var(--text-primary);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-accent-green: var(--accent-green);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-red: var(--accent-red);
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-teal: var(--accent-teal);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================================
+   ベースリセット
+   ============================================================ */
+
+html {
+  background: var(--bg-primary);
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   Apple Health 風カード
+   ============================================================ */
+
+.card {
+  background: var(--bg-secondary);
+  border-radius: var(--card-radius);
+  padding: 20px;
+}
+
+.card-sm {
+  background: var(--bg-secondary);
+  border-radius: var(--card-radius-sm);
+  padding: 16px;
+}
+
+/* ============================================================
+   スクロールバー (非表示)
+   ============================================================ */
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ============================================================
+   セーフエリア (iOS PWA 対応)
+   ============================================================ */
+
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+}
+
+/* ============================================================
+   Recharts カスタム
+   ============================================================ */
+
+.recharts-cartesian-grid line {
+  stroke: var(--bg-tertiary) !important;
+}
+
+.recharts-text {
+  fill: var(--text-tertiary) !important;
+  font-size: 11px !important;
 }
