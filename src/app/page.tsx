@@ -578,6 +578,7 @@ export default function WeeklyCareMatrixPage() {
       }
 
       const results = await Promise.all(promises);
+      console.log('Save results:', results.map(r => ({ data: r.data, error: r.error, status: r.status })));
 
       // エラーチェック
       const errors = results.filter(r => r.error);
