@@ -472,7 +472,11 @@ export default function WeeklyCareMatrixPage() {
   }
 
   const handleSave = async () => {
-    if (!selectedId || !modalDate) return;
+    console.log('handleSave called', { selectedId, modalDate, conditionInput, feedingInputs, poopInput, urineInput, shedInput, weightInput, toggleCares, memoInput });
+    if (!selectedId || !modalDate) {
+      console.log('handleSave early return: selectedId or modalDate is falsy');
+      return;
+    }
     setSaving(true);
 
     try {
