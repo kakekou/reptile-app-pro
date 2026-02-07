@@ -28,6 +28,16 @@ interface CareEvent {
   dusting?: boolean;
 }
 
+interface FeedingInput {
+  foodType: string;
+  quantity: number;
+  dusting: boolean;
+}
+
+interface ShedInput {
+  completeness: "完全" | "不完全";
+}
+
 // ── 定数 ──────────────────────────────────────────────
 
 const CARE_ITEMS: CareItem[] = [
@@ -98,6 +108,11 @@ function getISOWeekNumber(date: Date): number {
   return 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
 }
 
+function formatModalDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, "0")}月${String(d.getDate()).padStart(2, "0")}日(${WEEKDAYS[d.getDay()]})`;
+}
+
 // ── ページコンポーネント ───────────────────────────────
 
 export default function WeeklyCareMatrixPage() {
@@ -106,6 +121,15 @@ export default function WeeklyCareMatrixPage() {
   const [weekOffset, setWeekOffset] = useState<number>(0);
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refetchCount, setRefetchCount] = useState(0);
+
+  // モーダル制御
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalDate, setModalDate] = useState<string>("");
+  const [feedingInputs, setFeedingInputs] = useState<FeedingInput[]>([]);
+  const [shedInput, setShedInput] = useState<ShedInput | null>(null);
+  const [weightInput, setWeightInput] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
   const weekDates = getWeekDates(weekOffset);
   const todayString = getTodayString();
@@ -143,7 +167,7 @@ export default function WeeklyCareMatrixPage() {
       });
   }, []);
 
-  // Effect 2: ケア記録の取得（selectedId or weekOffset 変更時）
+  // Effect 2: ケア記録の取得（selectedId or weekOffset or refetchCount 変更時）
   useEffect(() => {
     if (!selectedId) return;
 
@@ -193,7 +217,81 @@ export default function WeeklyCareMatrixPage() {
       setEvents([...feedEvents, ...shedEvents, ...measEvents]);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, weekOffset]);
+  }, [selectedId, weekOffset, refetchCount]);
+
+  // ── セルタップ ──
+
+  const handleCellTap = (date: string) => {
+    setModalDate(date);
+    const dayFeedings = events.filter((e) => e.type === "feeding" && e.date === date);
+    setFeedingInputs(
+      dayFeedings.length > 0
+        ? dayFeedings.map((f) => ({ foodType: f.foodType ?? "コオロギ", quantity: 1, dusting: f.dusting ?? false }))
+        : []
+    );
+    setShedInput(null);
+    setWeightInput("");
+    setModalOpen(true);
+  };
+
+  // ── 保存処理 ──
+
+  const handleSave = async () => {
+    if (!selectedId || !modalDate) return;
+    setSaving(true);
+
+    try {
+      const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const promises: PromiseLike<any>[] = [];
+
+      for (const fi of feedingInputs) {
+        promises.push(
+          supabase.from("feedings").insert({
+            individual_id: selectedId,
+            fed_at: modalDate + "T12:00:00",
+            food_type: fi.foodType,
+            quantity: fi.quantity,
+            dusting: fi.dusting,
+            refused: false,
+            notes: "",
+          })
+        );
+      }
+
+      if (shedInput) {
+        promises.push(
+          supabase.from("sheds").insert({
+            individual_id: selectedId,
+            shed_on: modalDate,
+            completeness: shedInput.completeness,
+            notes: "",
+          })
+        );
+      }
+
+      if (weightInput && parseFloat(weightInput) > 0) {
+        promises.push(
+          supabase.from("measurements").insert({
+            individual_id: selectedId,
+            measured_on: modalDate,
+            weight_g: parseFloat(weightInput),
+            notes: "",
+          })
+        );
+      }
+
+      await Promise.all(promises);
+      setModalOpen(false);
+      setRefetchCount((c) => c + 1);
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasModalInput = feedingInputs.length > 0 || shedInput !== null || weightInput !== "";
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -345,7 +443,10 @@ export default function WeeklyCareMatrixPage() {
                               key={date}
                               className={`p-0.5 text-center ${isToday ? "bg-blue-50/40" : ""}`}
                             >
-                              <div className="w-full h-9 flex items-center justify-center cursor-pointer hover:bg-gray-50 rounded transition-colors">
+                              <div
+                                onClick={() => handleCellTap(date)}
+                                className="w-full h-9 flex items-center justify-center cursor-pointer hover:bg-gray-50 rounded transition-colors"
+                              >
                                 {care.type === "feeding" ? (
                                   (() => {
                                     const dayFeedings = events.filter(
@@ -404,6 +505,205 @@ export default function WeeklyCareMatrixPage() {
           </div>
         )}
       </div>
+
+      {/* ── 記録入力モーダル（ボトムシート） ── */}
+      {modalOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setModalOpen(false)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-xl animate-slide-up">
+            {/* ハンドルバー */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            </div>
+
+            {/* ヘッダー */}
+            <div className="flex items-center justify-between px-4 pb-3 border-b border-gray-100">
+              <h2 className="text-base font-bold text-gray-900">
+                {formatModalDate(modalDate)}
+              </h2>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="text-sm text-gray-400 hover:text-gray-600"
+              >
+                キャンセル
+              </button>
+            </div>
+
+            {/* コンテンツ */}
+            <div className="px-4 py-4 space-y-6">
+              {/* === 給餌セクション === */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-gray-800">給餌</h3>
+                  <button
+                    onClick={() => setFeedingInputs([])}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    リセット
+                  </button>
+                </div>
+
+                {feedingInputs.map((fi, index) => (
+                  <div key={index} className="mb-3 p-3 bg-gray-50 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">給餌{index + 1}</span>
+                      <button
+                        onClick={() => setFeedingInputs((prev) => prev.filter((_, i) => i !== index))}
+                        className="text-xs text-red-400 hover:text-red-600"
+                      >
+                        削除
+                      </button>
+                    </div>
+
+                    {/* 餌タイプ選択 */}
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {Object.entries(FOOD_ICONS).map(([name, f]) => (
+                        <button
+                          key={name}
+                          onClick={() => {
+                            const updated = [...feedingInputs];
+                            updated[index] = { ...updated[index], foodType: name };
+                            setFeedingInputs(updated);
+                          }}
+                          className={`py-1.5 rounded-lg text-xs font-medium transition-colors
+                            ${fi.foodType === name
+                              ? "bg-blue-100 text-blue-700 ring-1 ring-blue-300"
+                              : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400"}`}
+                        >
+                          <span className={`text-sm font-bold ${f.color}`}>{f.symbol}</span>
+                          <div className="text-[9px] text-gray-400 mt-0.5">{name}</div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* 数量 + ダスティング */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">数量</span>
+                        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => {
+                              const updated = [...feedingInputs];
+                              updated[index] = { ...updated[index], quantity: Math.max(1, fi.quantity - 1) };
+                              setFeedingInputs(updated);
+                            }}
+                            className="px-2 py-1 text-gray-500 hover:bg-gray-50"
+                          >
+                            −
+                          </button>
+                          <span className="px-3 py-1 text-sm font-medium text-gray-800 min-w-[2rem] text-center">
+                            {fi.quantity}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const updated = [...feedingInputs];
+                              updated[index] = { ...updated[index], quantity: fi.quantity + 1 };
+                              setFeedingInputs(updated);
+                            }}
+                            className="px-2 py-1 text-gray-500 hover:bg-gray-50"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          const updated = [...feedingInputs];
+                          updated[index] = { ...updated[index], dusting: !fi.dusting };
+                          setFeedingInputs(updated);
+                        }}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
+                          ${fi.dusting
+                            ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300"
+                            : "bg-white text-gray-400 border border-gray-200"}`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        Ca+
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => setFeedingInputs((prev) => [...prev, { foodType: "コオロギ", quantity: 1, dusting: false }])}
+                  className="w-full py-2 border border-dashed border-gray-300 rounded-xl text-sm text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors"
+                >
+                  ＋ 給餌を追加
+                </button>
+              </section>
+
+              {/* === 脱皮セクション === */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-gray-800">脱皮</h3>
+                  <button
+                    onClick={() => setShedInput(null)}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    リセット
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  {(["完全", "不完全"] as const).map((comp) => (
+                    <button
+                      key={comp}
+                      onClick={() => setShedInput(shedInput?.completeness === comp ? null : { completeness: comp })}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors
+                        ${shedInput?.completeness === comp
+                          ? "bg-purple-100 text-purple-700 ring-1 ring-purple-300"
+                          : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400"}`}
+                    >
+                      {comp}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* === 体重計測セクション === */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-gray-800">体重計測</h3>
+                  <button
+                    onClick={() => setWeightInput("")}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    リセット
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="0.0"
+                    value={weightInput}
+                    onChange={(e) => setWeightInput(e.target.value)}
+                    className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                  />
+                  <span className="text-sm text-gray-500 font-medium">g</span>
+                </div>
+              </section>
+            </div>
+
+            {/* 保存ボタン */}
+            <div className="sticky bottom-0 px-4 py-3 bg-white border-t border-gray-100">
+              <button
+                onClick={handleSave}
+                disabled={saving || !hasModalInput}
+                className={`w-full py-3 rounded-xl text-sm font-bold transition-colors
+                  ${saving || !hasModalInput
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"}`}
+              >
+                {saving ? "保存中..." : "登録"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
