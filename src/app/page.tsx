@@ -398,6 +398,7 @@ export default function WeeklyCareMatrixPage() {
   const [lengthInput, setLengthInput] = useState("");
   const [toggleCares, setToggleCares] = useState<Record<string, boolean>>({});
   const [memoInput, setMemoInput] = useState("");
+  const [refetchCount, setRefetchCount] = useState(0);
 
   const weekDates = getWeekDates(weekOffset);
   const todayString = getTodayString();
@@ -470,26 +471,131 @@ export default function WeeklyCareMatrixPage() {
     setModalOpen(true);
   }
 
-  async function handleSave() {
-    // Part C で実装
-    console.log("handleSave", {
-      date: modalDate,
-      condition: conditionInput,
-      feedings: feedingInputs,
-      poop: poopInput,
-      urine: urineInput,
-      shed: shedInput,
-      weight: weightInput,
-      length: lengthInput,
-      toggleCares,
-      memo: memoInput,
-    });
+  const handleSave = async () => {
+    if (!selectedId || !modalDate) return;
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+
+    try {
+      const supabase = createClient();
+      const promises: PromiseLike<any>[] = [];
+
+      // 1. 調子 → health_logs
+      if (conditionInput) {
+        promises.push(
+          supabase.from('health_logs').insert({
+            individual_id: selectedId,
+            logged_on: modalDate,
+            condition: conditionInput,
+            symptoms: [],
+          }).select().then(r => r)
+        );
+      }
+
+      // 2. 給餌 → feedings（複数行）
+      for (const fi of feedingInputs) {
+        promises.push(
+          supabase.from('feedings').insert({
+            individual_id: selectedId,
+            fed_at: modalDate + 'T12:00:00',
+            food_type: fi.foodType,
+            quantity: fi.quantity,
+            dusting: fi.dusting,
+            refused: fi.refused,
+          }).select().then(r => r)
+        );
+      }
+
+      // 3. フン → care_logs
+      if (poopInput) {
+        promises.push(
+          supabase.from('care_logs').insert({
+            individual_id: selectedId,
+            logged_on: modalDate,
+            care_type: 'poop',
+            value: poopInput,
+          }).select().then(r => r)
+        );
+      }
+
+      // 4. 尿 → care_logs
+      if (urineInput) {
+        promises.push(
+          supabase.from('care_logs').insert({
+            individual_id: selectedId,
+            logged_on: modalDate,
+            care_type: 'urine',
+            value: urineInput,
+          }).select().then(r => r)
+        );
+      }
+
+      // 5. 脱皮 → sheds
+      if (shedInput) {
+        promises.push(
+          supabase.from('sheds').insert({
+            individual_id: selectedId,
+            shed_on: modalDate,
+            completeness: shedInput === '脱皮' ? '完全' : '不完全',
+          }).select().then(r => r)
+        );
+      }
+
+      // 6. 体重 → measurements
+      if (weightInput && parseFloat(weightInput) > 0) {
+        promises.push(
+          supabase.from('measurements').insert({
+            individual_id: selectedId,
+            measured_on: modalDate,
+            weight_g: parseFloat(weightInput),
+            length_cm: lengthInput ? parseFloat(lengthInput) : null,
+          }).select().then(r => r)
+        );
+      }
+
+      // 7. トグル系ケア → care_logs（各タイプごとに1レコード）
+      for (const [careType, isOn] of Object.entries(toggleCares)) {
+        if (!isOn) continue;
+        promises.push(
+          supabase.from('care_logs').insert({
+            individual_id: selectedId,
+            logged_on: modalDate,
+            care_type: careType,
+            value: careType === 'memo' ? memoInput : null,
+          }).select().then(r => r)
+        );
+      }
+
+      // 8. メモ（トグルに含まれていない場合でも、テキストがあれば保存）
+      if (memoInput && !toggleCares['memo']) {
+        promises.push(
+          supabase.from('care_logs').insert({
+            individual_id: selectedId,
+            logged_on: modalDate,
+            care_type: 'memo',
+            value: memoInput,
+          }).select().then(r => r)
+        );
+      }
+
+      const results = await Promise.all(promises);
+
+      // エラーチェック
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        console.error('Save errors:', errors.map(e => e.error));
+      }
+
+      // モーダルを閉じてデータ再取得
       setModalOpen(false);
-    }, 300);
-  }
+      resetAllInputs();
+      setRefetchCount(c => c + 1);
+
+    } catch (error) {
+      console.error('Save error:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Effect 1: 個体一覧の取得（マウント時1回）
   useEffect(() => {
@@ -552,7 +658,7 @@ export default function WeeklyCareMatrixPage() {
       setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data, careRes.data));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode, selectedId, weekOffset]);
+  }, [viewMode, selectedId, weekOffset, refetchCount]);
 
   // Effect 3: 月間ケア記録の取得
   useEffect(() => {
@@ -587,7 +693,7 @@ export default function WeeklyCareMatrixPage() {
       setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data, careRes.data));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode, selectedId, monthOffset]);
+  }, [viewMode, selectedId, monthOffset, refetchCount]);
 
   return (
     <>
