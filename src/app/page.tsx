@@ -635,15 +635,6 @@ export default function WeeklyCareMatrixPage() {
           )}
         </div>
 
-        {/* DEBUG: テスト用ボタン（動作確認後に削除） */}
-        <button
-          type="button"
-          onClick={() => openModal(getTodayString())}
-          className="w-full py-3 bg-red-500 text-white font-bold rounded-xl text-sm"
-        >
-          テスト：モーダルを開く
-        </button>
-
         {/* C. マトリクスカード */}
         {loading ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-2">
@@ -745,15 +736,6 @@ export default function WeeklyCareMatrixPage() {
                 </button>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => { alert('click works'); openModal(getTodayString()); }}
-              onTouchEnd={(e) => { e.preventDefault(); alert('touch works'); openModal(getTodayString()); }}
-              className="mx-4 mb-2 px-4 py-3 bg-red-500 text-white text-base font-bold rounded-xl touch-manipulation"
-            >
-              テスト：モーダルを開く
-            </button>
 
             {viewMode === "week" ? (
               /* C-2. 週間グリッド本体 */
