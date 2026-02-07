@@ -511,7 +511,7 @@ export default function WeeklyCareMatrixPage() {
           supabase.from('care_logs').insert({
             individual_id: selectedId,
             logged_on: modalDate,
-            care_type: 'poop',
+            log_type: 'poop',
             value: poopInput,
           }).select().then(r => r)
         );
@@ -523,7 +523,7 @@ export default function WeeklyCareMatrixPage() {
           supabase.from('care_logs').insert({
             individual_id: selectedId,
             logged_on: modalDate,
-            care_type: 'urine',
+            log_type: 'urine',
             value: urineInput,
           }).select().then(r => r)
         );
@@ -559,7 +559,7 @@ export default function WeeklyCareMatrixPage() {
           supabase.from('care_logs').insert({
             individual_id: selectedId,
             logged_on: modalDate,
-            care_type: careType,
+            log_type: careType,
             value: careType === 'memo' ? memoInput : null,
           }).select().then(r => r)
         );
@@ -571,7 +571,7 @@ export default function WeeklyCareMatrixPage() {
           supabase.from('care_logs').insert({
             individual_id: selectedId,
             logged_on: modalDate,
-            care_type: 'memo',
+            log_type: 'memo',
             value: memoInput,
           }).select().then(r => r)
         );
