@@ -746,6 +746,15 @@ export default function WeeklyCareMatrixPage() {
               </div>
             </div>
 
+            <button
+              type="button"
+              onClick={() => { alert('click works'); openModal(getTodayString()); }}
+              onTouchEnd={(e) => { e.preventDefault(); alert('touch works'); openModal(getTodayString()); }}
+              className="mx-4 mb-2 px-4 py-3 bg-red-500 text-white text-base font-bold rounded-xl touch-manipulation"
+            >
+              テスト：モーダルを開く
+            </button>
+
             {viewMode === "week" ? (
               /* C-2. 週間グリッド本体 */
               <div className="overflow-x-auto touch-pan-x">
