@@ -634,6 +634,15 @@ export default function WeeklyCareMatrixPage() {
           )}
         </div>
 
+        {/* DEBUG: テスト用ボタン（動作確認後に削除） */}
+        <button
+          type="button"
+          onClick={() => openModal(getTodayString())}
+          className="w-full py-3 bg-red-500 text-white font-bold rounded-xl text-sm"
+        >
+          テスト：モーダルを開く
+        </button>
+
         {/* C. マトリクスカード */}
         {loading ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-2">
@@ -781,14 +790,15 @@ export default function WeeklyCareMatrixPage() {
                           return (
                             <td
                               key={date}
-                              className={`py-2 px-1 text-center border border-gray-200 ${isToday ? "bg-blue-50/40" : ""}`}
+                              className={`p-0 text-center border border-gray-200 ${isToday ? "bg-blue-50/40" : ""}`}
                             >
-                              <div
+                              <button
+                                type="button"
                                 onClick={() => openModal(date)}
-                                className="w-full h-10 flex items-center justify-center cursor-pointer hover:bg-gray-50 rounded transition-colors"
+                                className="w-full h-12 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors touch-manipulation"
                               >
                                 {renderCellContent(care, dayEvents)}
-                              </div>
+                              </button>
                             </td>
                           );
                         })}
@@ -822,10 +832,11 @@ export default function WeeklyCareMatrixPage() {
                       const dayEvents = events.filter((e) => e.date === date);
 
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={di}
                           onClick={() => openModal(date)}
-                          className={`border border-gray-200 min-h-[88px] p-1 cursor-pointer hover:bg-gray-50 transition-colors ${isToday ? "bg-blue-50/40" : ""}`}
+                          className={`border border-gray-200 min-h-[88px] p-1 text-left cursor-pointer hover:bg-gray-50 transition-colors touch-manipulation ${isToday ? "bg-blue-50/40" : ""}`}
                         >
                           <div className="flex justify-end mb-0.5">
                             {isToday ? (
@@ -846,7 +857,7 @@ export default function WeeklyCareMatrixPage() {
                           <div className="flex flex-wrap gap-1">
                             {renderMonthCellIcons(dayEvents)}
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -859,15 +870,22 @@ export default function WeeklyCareMatrixPage() {
 
       {/* ── モーダル（ボトムシート） ── */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div
+          className="fixed inset-0 flex items-end justify-center"
+          style={{ zIndex: 9999 }}
+        >
           {/* 背景オーバーレイ */}
           <div
-            className="absolute inset-0 bg-black/30"
+            className="absolute inset-0"
+            style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
             onClick={() => setModalOpen(false)}
           />
 
           {/* シート本体 */}
-          <div className="relative w-full max-w-lg bg-white rounded-t-2xl animate-slide-up max-h-[85dvh] flex flex-col">
+          <div
+            className="relative w-full max-w-lg bg-white rounded-t-2xl animate-slide-up flex flex-col"
+            style={{ maxHeight: "85vh" }}
+          >
             {/* ヘッダー */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
               <button onClick={() => setModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">

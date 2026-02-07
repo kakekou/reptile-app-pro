@@ -10,7 +10,8 @@
       "Bash(findstr:*)",
       "Bash(git -C \"C:\\\\Users\\\\a\\\\reptile-app\" add src/app/page.tsx)",
       "Bash(git -C \"C:\\\\Users\\\\a\\\\reptile-app\" commit -m \"$\\(cat <<''EOF''\nfeat: add full care input modal with all 16 sections\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git -C \"C:\\\\Users\\\\a\\\\reptile-app\" push)"
+      "Bash(git -C \"C:\\\\Users\\\\a\\\\reptile-app\" push)",
+      "Bash(git -C \"C:\\\\Users\\\\a\\\\reptile-app\" commit -m \"$\\(cat <<''EOF''\nfix: enable cell tap to open care input modal\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
