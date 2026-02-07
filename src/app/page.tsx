@@ -926,11 +926,8 @@ export default function WeeklyCareMatrixPage() {
                           type="button"
                           key={di}
                           onClick={() => openModal(date)}
-                          onTouchEnd={(e) => {
-                            e.stopPropagation();
-                            openModal(date);
-                          }}
-                          className={`border border-gray-200 min-h-[88px] p-1 text-left cursor-pointer hover:bg-gray-50 transition-colors touch-manipulation ${isToday ? "bg-blue-50/40" : ""}`}
+                          className={`border border-gray-200 min-h-[88px] p-1 text-left touch-manipulation active:bg-blue-50
+                            ${isToday ? 'bg-blue-50/40' : 'hover:bg-gray-50'}`}
                         >
                           <div className="flex justify-end mb-0.5">
                             {isToday ? (
