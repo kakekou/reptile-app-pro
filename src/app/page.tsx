@@ -17,8 +17,16 @@ import {
   Egg,
   Sparkles,
   Weight,
+  StickyNote,
+  Camera,
+  Bug,
+  Locate,
+  Worm,
+  Mouse,
+  Bird,
+  FlaskConical,
+  Plus,
 } from "lucide-react";
-// Note: Icons are used in renderCellContent for data cells, not for row labels
 import { createClient } from "@/lib/supabase/client";
 
 // ── 型定義 ──────────────────────────────────────────────
@@ -37,7 +45,9 @@ type CareType =
   | "mating"
   | "egg_laying"
   | "shedding"
-  | "weight";
+  | "weight"
+  | "memo"
+  | "photo";
 
 interface CareItem {
   type: CareType;
@@ -78,19 +88,21 @@ const CARE_ITEMS: CareItem[] = [
   { type: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-amber-500" },
   { type: "shedding",     label: "脱皮",       icon: Sparkles,       color: "text-purple-500" },
   { type: "weight",       label: "体重",       icon: Weight,         color: "text-emerald-500" },
+  { type: "memo",         label: "メモ",       icon: StickyNote,     color: "text-blue-400" },
+  { type: "photo",        label: "写真",       icon: Camera,         color: "text-indigo-400" },
 ];
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
-const FOOD_ICONS: Record<string, { symbol: string; color: string }> = {
-  "コオロギ":     { symbol: "コ", color: "text-amber-700" },
-  "デュビア":     { symbol: "デ", color: "text-red-700" },
-  "ミルワーム":   { symbol: "ミ", color: "text-yellow-600" },
-  "ピンクマウス": { symbol: "ピ", color: "text-pink-500" },
-  "ヒヨコ":       { symbol: "ヒ", color: "text-orange-400" },
-  "卵":           { symbol: "卵", color: "text-amber-400" },
-  "人工フード":   { symbol: "人", color: "text-blue-600" },
-  "その他":       { symbol: "他", color: "text-gray-500" },
+const FOOD_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  "コオロギ":     { icon: Bug,          color: "text-amber-700" },
+  "デュビア":     { icon: Locate,       color: "text-red-700" },
+  "ミルワーム":   { icon: Worm,         color: "text-yellow-600" },
+  "ピンクマウス": { icon: Mouse,        color: "text-pink-500" },
+  "ヒヨコ":       { icon: Bird,         color: "text-orange-400" },
+  "卵":           { icon: Egg,          color: "text-amber-400" },
+  "人工フード":   { icon: FlaskConical, color: "text-blue-600" },
+  "その他":       { icon: Plus,         color: "text-gray-500" },
 };
 
 const CONDITION_COLORS: Record<string, string> = {
@@ -160,15 +172,11 @@ function renderCellContent(care: CareItem, dayEvents: CareEvent[]) {
       return (
         <div className="flex items-center justify-center gap-0.5 flex-wrap">
           {dayEvents.map((f, i) => {
-            const foodIcon = FOOD_ICONS[f.foodType ?? ""] ?? {
-              symbol: "?",
-              color: "text-gray-400",
-            };
+            const fi = FOOD_ICONS[f.foodType ?? ""] ?? { icon: Plus, color: "text-gray-400" };
+            const IconComp = fi.icon;
             return (
               <div key={i} className="relative">
-                <span className={`text-xs font-bold ${foodIcon.color}`}>
-                  {foodIcon.symbol}
-                </span>
+                <IconComp className={`w-4 h-4 ${fi.color}`} />
                 {f.dusting && (
                   <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
                 )}
@@ -484,21 +492,6 @@ export default function WeeklyCareMatrixPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-
-            {/* 凡例 */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 border-t border-gray-200">
-              <span className="text-[11px] text-gray-300">凡例:</span>
-              {Object.entries(FOOD_ICONS).map(([name, f]) => (
-                <span key={name} className="flex items-center gap-0.5">
-                  <span className={`text-[11px] font-bold ${f.color}`}>{f.symbol}</span>
-                  <span className="text-[10px] text-gray-400">{name}</span>
-                </span>
-              ))}
-              <span className="flex items-center gap-0.5">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                <span className="text-[10px] text-gray-400">Ca+</span>
-              </span>
             </div>
           </div>
         )}
