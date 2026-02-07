@@ -313,18 +313,18 @@ function renderMonthCellIcons(dayEvents: CareEvent[]) {
       const fi = FOOD_ICONS[feedEvent?.foodType ?? ""];
       if (fi) {
         const IconComp = fi.icon;
-        return <IconComp key={care.type} className={`w-3.5 h-3.5 ${fi.color}`} />;
+        return <IconComp key={care.type} className={`w-4 h-4 ${fi.color}`} />;
       }
-      return <Bug key={care.type} className="w-3.5 h-3.5 text-amber-600" />;
+      return <Bug key={care.type} className="w-4 h-4 text-amber-600" />;
     }
 
     if (care.type === "condition") {
       const condEvent = dayEvents.find((e) => e.type === "condition");
       const condColor = CONDITION_COLORS[condEvent?.condition ?? "普通"] ?? "text-gray-400";
-      return <care.icon key={care.type} className={`w-3.5 h-3.5 ${condColor}`} />;
+      return <care.icon key={care.type} className={`w-4 h-4 ${condColor}`} />;
     }
 
-    return <care.icon key={care.type} className={`w-3.5 h-3.5 ${care.color}`} />;
+    return <care.icon key={care.type} className={`w-4 h-4 ${care.color}`} />;
   });
 }
 
@@ -671,7 +671,7 @@ export default function WeeklyCareMatrixPage() {
                   <div key={wi} className="grid grid-cols-7">
                     {week.map((date, di) => {
                       if (!date) {
-                        return <div key={di} className="border border-gray-100 min-h-[72px]" />;
+                        return <div key={di} className="border border-gray-100 min-h-[88px]" />;
                       }
 
                       const isToday = date === todayString;
@@ -681,16 +681,16 @@ export default function WeeklyCareMatrixPage() {
                       return (
                         <div
                           key={di}
-                          className={`border border-gray-200 min-h-[72px] p-1 ${isToday ? "bg-blue-50/40" : ""}`}
+                          className={`border border-gray-200 min-h-[88px] p-1 ${isToday ? "bg-blue-50/40" : ""}`}
                         >
                           <div className="flex justify-end mb-0.5">
                             {isToday ? (
-                              <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-[11px] font-bold inline-flex items-center justify-center">
+                              <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold inline-flex items-center justify-center">
                                 {dayNum}
                               </span>
                             ) : (
                               <span
-                                className={`text-xs font-medium ${
+                                className={`text-sm font-medium ${
                                   di === 0 ? "text-red-400" : di === 6 ? "text-blue-400" : "text-gray-700"
                                 }`}
                               >
@@ -699,7 +699,7 @@ export default function WeeklyCareMatrixPage() {
                             )}
                           </div>
 
-                          <div className="flex flex-wrap gap-0.5">
+                          <div className="flex flex-wrap gap-1">
                             {renderMonthCellIcons(dayEvents)}
                           </div>
                         </div>
