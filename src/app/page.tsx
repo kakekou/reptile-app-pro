@@ -748,7 +748,7 @@ export default function WeeklyCareMatrixPage() {
 
             {viewMode === "week" ? (
               /* C-2. 週間グリッド本体 */
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto touch-pan-x">
                 <table className="w-full table-fixed border-collapse">
                   <colgroup>
                     <col style={{ width: "60px" }} />
@@ -796,6 +796,10 @@ export default function WeeklyCareMatrixPage() {
                               <button
                                 type="button"
                                 onClick={() => openModal(date)}
+                                onTouchEnd={(e) => {
+                                  e.stopPropagation();
+                                  openModal(date);
+                                }}
                                 className="w-full h-12 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors touch-manipulation"
                               >
                                 {renderCellContent(care, dayEvents)}
@@ -837,6 +841,10 @@ export default function WeeklyCareMatrixPage() {
                           type="button"
                           key={di}
                           onClick={() => openModal(date)}
+                          onTouchEnd={(e) => {
+                            e.stopPropagation();
+                            openModal(date);
+                          }}
                           className={`border border-gray-200 min-h-[88px] p-1 text-left cursor-pointer hover:bg-gray-50 transition-colors touch-manipulation ${isToday ? "bg-blue-50/40" : ""}`}
                         >
                           <div className="flex justify-end mb-0.5">
