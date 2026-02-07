@@ -757,69 +757,57 @@ export default function WeeklyCareMatrixPage() {
 
             {viewMode === "week" ? (
               /* C-2. 週間グリッド本体 */
-              <div className="overflow-x-auto touch-pan-x">
-                <table className="w-full table-fixed border-collapse">
-                  <colgroup>
-                    <col style={{ width: "60px" }} />
-                    <col /><col /><col /><col /><col /><col /><col />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th className="py-2 sticky left-0 z-10 bg-white border border-gray-200"></th>
-                      {weekDates.map((date) => {
-                        const { day, weekday } = formatDate(date);
-                        const isToday = date === todayString;
-                        return (
-                          <th key={date} className="py-2 text-center border border-gray-200">
-                            <div className="flex flex-col items-center gap-0.5">
-                              <span className="text-xs text-gray-400 font-medium">{weekday}</span>
-                              {isToday ? (
-                                <span className="w-8 h-8 rounded-full bg-blue-600 text-white text-base font-bold inline-flex items-center justify-center">
-                                  {day}
-                                </span>
-                              ) : (
-                                <span className="text-base font-bold text-gray-800">{day}</span>
-                              )}
-                            </div>
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {CARE_ITEMS.map((care) => (
-                      <tr key={care.type}>
-                        <td className="py-3 px-2 text-left sticky left-0 z-10 bg-white border border-gray-200">
-                          <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{care.label}</span>
-                        </td>
-                        {weekDates.map((date) => {
-                          const isToday = date === todayString;
-                          const dayEvents = events.filter(
-                            (e) => e.type === care.type && e.date === date
-                          );
-                          return (
-                            <td
-                              key={date}
-                              className={`p-0 text-center border border-gray-200 ${isToday ? "bg-blue-50/40" : ""}`}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => openModal(date)}
-                                onTouchEnd={(e) => {
-                                  e.stopPropagation();
-                                  openModal(date);
-                                }}
-                                className="w-full h-12 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors touch-manipulation"
-                              >
-                                {renderCellContent(care, dayEvents)}
-                              </button>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div>
+                {/* 曜日ヘッダー行 */}
+                <div className="grid border-b-2 border-gray-200" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+                  <div className="py-2 px-1" />
+                  {weekDates.map((date) => {
+                    const { day, weekday } = formatDate(date);
+                    const isToday = date === todayString;
+                    const dayIndex = new Date(date + 'T00:00:00').getDay();
+                    return (
+                      <div key={date} className="py-2 text-center">
+                        <div className={`text-xs font-medium ${dayIndex === 0 ? 'text-red-400' : dayIndex === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
+                          {weekday}
+                        </div>
+                        {isToday ? (
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-base font-bold">
+                            {day}
+                          </span>
+                        ) : (
+                          <div className="text-base font-bold text-gray-800">{day}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ケア項目行 */}
+                {CARE_ITEMS.map((care) => (
+                  <div key={care.type} className="grid border-b border-gray-200" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+                    <div className="py-3 px-1 flex items-center border-r border-gray-200">
+                      <span className="text-xs text-gray-500 font-medium truncate">{care.label}</span>
+                    </div>
+                    {weekDates.map((date) => {
+                      const isToday = date === todayString;
+                      const dayEvents = events.filter(
+                        (e) => e.type === care.type && e.date === date
+                      );
+                      return (
+                        <button
+                          key={date}
+                          type="button"
+                          onClick={() => openModal(date)}
+                          className={`py-2 px-0.5 flex items-center justify-center border-r border-gray-100
+                            min-h-[44px] touch-manipulation active:bg-blue-50
+                            ${isToday ? 'bg-blue-50/40' : 'hover:bg-gray-50'}`}
+                        >
+                          {renderCellContent(care, dayEvents)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             ) : (
               /* C-3. 月間カレンダーグリッド */
