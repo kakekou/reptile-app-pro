@@ -11,7 +11,7 @@ export function Card({ children, className = '', onClick }: CardProps) {
   return (
     <Comp
       onClick={onClick}
-      className={`rounded-[20px] bg-bg-secondary p-5 ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''} ${className}`}
+      className={`rounded-[20px] bg-bg-secondary border border-border shadow-sm p-5 ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''} ${className}`}
     >
       {children}
     </Comp>
@@ -20,7 +20,7 @@ export function Card({ children, className = '', onClick }: CardProps) {
 
 export function CardSmall({ children, className = '' }: Omit<CardProps, 'onClick'>) {
   return (
-    <div className={`rounded-[14px] bg-bg-secondary p-4 ${className}`}>
+    <div className={`rounded-[14px] bg-bg-secondary border border-border shadow-sm p-4 ${className}`}>
       {children}
     </div>
   );

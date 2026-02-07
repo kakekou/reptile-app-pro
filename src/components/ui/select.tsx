@@ -24,12 +24,12 @@ export function Select({ label, options, error, className = '', id, ...props }: 
         id={selectId}
         className={`
           appearance-none
-          rounded-[14px] bg-bg-tertiary px-4 py-3
+          rounded-[14px] bg-white border border-gray-300 px-4 py-3
           text-[15px] text-text-primary
           outline-none
-          focus:ring-2 focus:ring-accent-blue/50
+          focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue
           transition-shadow
-          ${error ? 'ring-2 ring-accent-red/50' : ''}
+          ${error ? 'ring-2 ring-accent-red/30 border-accent-red' : ''}
           ${className}
         `}
         {...props}

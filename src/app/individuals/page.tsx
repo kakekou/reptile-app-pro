@@ -68,7 +68,7 @@ export default function IndividualsPage() {
             placeholder="名前・モルフで検索"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-[14px] bg-bg-secondary pl-11 pr-4 py-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-blue/50"
+            className="w-full rounded-[14px] bg-white border border-gray-300 pl-11 pr-4 py-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue"
           />
         </div>
       </div>

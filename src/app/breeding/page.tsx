@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Heart, Plus, ArrowRight } from 'lucide-react';
+import { Heart, ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,7 +58,7 @@ export default function BreedingPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Heart size={16} className={p.confirmed ? 'text-accent-red' : 'text-text-tertiary'} />
-                <Badge color={p.confirmed ? '#30d158' : '#ff9f0a'}>
+                <Badge color={p.confirmed ? '#059669' : '#d97706'}>
                   {p.confirmed ? '確認済み' : '未確認'}
                 </Badge>
               </div>

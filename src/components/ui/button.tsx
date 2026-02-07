@@ -12,7 +12,7 @@ const variantStyles: Record<Variant, string> = {
   primary:   'bg-accent-blue text-white hover:bg-accent-blue/90',
   secondary: 'bg-bg-tertiary text-text-primary hover:bg-bg-tertiary/80',
   danger:    'bg-accent-red text-white hover:bg-accent-red/90',
-  ghost:     'bg-transparent text-accent-blue hover:bg-white/5',
+  ghost:     'bg-transparent text-accent-blue hover:bg-gray-100',
 };
 
 export function Button({

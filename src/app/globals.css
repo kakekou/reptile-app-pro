@@ -1,32 +1,35 @@
 @import "tailwindcss";
 
 /* ============================================================
-   ReptiLog - Apple Health 風ダークテーマ
+   ReptiLog - Clean Light Theme (Notion / Apple Health 風)
    ============================================================ */
 
 :root {
   /* ── 背景 ── */
-  --bg-primary:    #000000;
-  --bg-secondary:  #1c1c1e;
-  --bg-tertiary:   #2c2c2e;
-  --bg-elevated:   #1c1c1e;
+  --bg-primary:    #f9fafb;
+  --bg-secondary:  #ffffff;
+  --bg-tertiary:   #f3f4f6;
+  --bg-elevated:   #ffffff;
 
   /* ── テキスト ── */
-  --text-primary:    #ffffff;
-  --text-secondary:  #ababab;
-  --text-tertiary:   #6e6e73;
+  --text-primary:    #111827;
+  --text-secondary:  #6b7280;
+  --text-tertiary:   #9ca3af;
 
   /* ── アクセントカラー ── */
-  --accent-green:   #30d158;
-  --accent-blue:    #0a84ff;
-  --accent-red:     #ff453a;
-  --accent-orange:  #ff9f0a;
-  --accent-purple:  #bf5af2;
-  --accent-teal:    #64d2ff;
+  --accent-green:   #059669;
+  --accent-blue:    #2563eb;
+  --accent-red:     #e11d48;
+  --accent-orange:  #d97706;
+  --accent-purple:  #7c3aed;
+  --accent-teal:    #0891b2;
 
   /* ── カード ── */
   --card-radius:     20px;
   --card-radius-sm:  14px;
+
+  /* ── ボーダー ── */
+  --border-color:    #e5e7eb;
 
   /* ── 基本 ── */
   --background:  var(--bg-primary);
@@ -49,6 +52,7 @@
   --color-accent-orange: var(--accent-orange);
   --color-accent-purple: var(--accent-purple);
   --color-accent-teal: var(--accent-teal);
+  --color-border: var(--border-color);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -59,7 +63,7 @@
 
 html {
   background: var(--bg-primary);
-  color-scheme: dark;
+  color-scheme: light;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -72,18 +76,22 @@ body {
 }
 
 /* ============================================================
-   Apple Health 風カード
+   Apple Health 風カード（ライトテーマ）
    ============================================================ */
 
 .card {
   background: var(--bg-secondary);
   border-radius: var(--card-radius);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   padding: 20px;
 }
 
 .card-sm {
   background: var(--bg-secondary);
   border-radius: var(--card-radius-sm);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   padding: 16px;
 }
 
@@ -108,14 +116,14 @@ body {
 }
 
 /* ============================================================
-   Recharts カスタム
+   Recharts カスタム（ライトテーマ）
    ============================================================ */
 
 .recharts-cartesian-grid line {
-  stroke: var(--bg-tertiary) !important;
+  stroke: #e5e7eb !important;
 }
 
 .recharts-text {
-  fill: var(--text-tertiary) !important;
+  fill: #6b7280 !important;
   font-size: 11px !important;
 }

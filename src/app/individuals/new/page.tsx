@@ -154,7 +154,7 @@ export default function NewIndividualPage() {
               value={form.notes}
               onChange={(e) => update('notes', e.target.value)}
               rows={3}
-              className="rounded-[14px] bg-bg-tertiary px-4 py-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-blue/50 resize-none"
+              className="rounded-[14px] bg-white border border-gray-300 px-4 py-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue resize-none"
             />
           </div>
         </Card>

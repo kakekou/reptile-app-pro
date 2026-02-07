@@ -8,7 +8,6 @@ import {
   Utensils,
   Scale,
   HeartPulse,
-  Layers,
   TrendingUp,
   CircleDot,
   CircleDashed,
@@ -24,7 +23,7 @@ import { ja } from 'date-fns/locale';
 import type { Individual } from '@/types/database';
 
 const SEX_ICON = { 'オス': CircleDot, 'メス': CircleDashed, '不明': HelpCircle };
-const CONDITION_COLORS: Record<string, string> = { '絶好調': '#30d158', '普通': '#0a84ff', '不調': '#ff453a' };
+const CONDITION_COLORS: Record<string, string> = { '絶好調': '#059669', '普通': '#2563eb', '不調': '#e11d48' };
 const SPECIES_SHORT: Record<string, string> = {
   'ニシアフリカトカゲモドキ': 'ニシアフ',
   'ヒョウモントカゲモドキ': 'レオパ',
@@ -79,9 +78,9 @@ export default function IndividualDetailPage() {
   const SexIcon = SEX_ICON[individual.sex as keyof typeof SEX_ICON] ?? HelpCircle;
 
   const quickActions = [
-    { href: `/individuals/${id}/feeding`, icon: Utensils,   label: '給餌記録',   color: '#30d158' },
-    { href: `/individuals/${id}/health`,  icon: HeartPulse, label: '体調記録',   color: '#ff453a' },
-    { href: `/individuals/${id}/growth`,  icon: TrendingUp, label: '成長分析',   color: '#0a84ff' },
+    { href: `/individuals/${id}/feeding`, icon: Utensils,   label: '給餌記録',   color: '#059669' },
+    { href: `/individuals/${id}/health`,  icon: HeartPulse, label: '体調記録',   color: '#e11d48' },
+    { href: `/individuals/${id}/growth`,  icon: TrendingUp, label: '成長分析',   color: '#2563eb' },
   ];
 
   return (
@@ -115,9 +114,9 @@ export default function IndividualDetailPage() {
                 <SexIcon size={16} className="text-text-secondary" />
               </div>
               <div className="flex flex-wrap gap-1.5 mt-1">
-                <Badge color="#6e6e73">{SPECIES_SHORT[individual.species]}</Badge>
+                <Badge color="#6b7280">{SPECIES_SHORT[individual.species]}</Badge>
                 {individual.morph && <Badge color="var(--accent-purple)">{individual.morph}</Badge>}
-                <Badge color="#30d158">{individual.status}</Badge>
+                <Badge color="#059669">{individual.status}</Badge>
               </div>
               {individual.birth_date && (
                 <p className="text-[12px] text-text-tertiary mt-2">
@@ -134,19 +133,19 @@ export default function IndividualDetailPage() {
             icon={<Scale size={16} />}
             label="体重"
             value={latest.weight_g != null ? `${latest.weight_g}g` : '--'}
-            color="#0a84ff"
+            color="#2563eb"
           />
           <MiniStat
             icon={<HeartPulse size={16} />}
             label="体調"
             value={latest.condition ?? '--'}
-            color={CONDITION_COLORS[latest.condition ?? ''] ?? '#6e6e73'}
+            color={CONDITION_COLORS[latest.condition ?? ''] ?? '#6b7280'}
           />
           <MiniStat
             icon={<Utensils size={16} />}
             label="最終給餌"
             value={latest.fed_at ? formatDistanceToNow(new Date(latest.fed_at), { addSuffix: true, locale: ja }) : '--'}
-            color="#30d158"
+            color="#059669"
           />
         </div>
 
@@ -156,11 +155,11 @@ export default function IndividualDetailPage() {
             <Link
               key={href}
               href={href}
-              className="flex flex-col items-center gap-2 rounded-[16px] bg-bg-secondary p-4 active:scale-95 transition-transform"
+              className="flex flex-col items-center gap-2 rounded-[16px] bg-bg-secondary border border-border shadow-sm p-4 active:scale-95 transition-transform"
             >
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: `${color}15` }}
+                style={{ backgroundColor: `${color}10` }}
               >
                 <Icon size={20} style={{ color }} />
               </div>
@@ -186,7 +185,7 @@ export default function IndividualDetailPage() {
 
 function MiniStat({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
-    <div className="rounded-[14px] bg-bg-secondary p-3 flex flex-col items-center gap-1">
+    <div className="rounded-[14px] bg-bg-secondary border border-border shadow-sm p-3 flex flex-col items-center gap-1">
       <div style={{ color }}>{icon}</div>
       <span className="text-[11px] text-text-tertiary">{label}</span>
       <span className="text-[14px] font-bold" style={{ color }}>{value}</span>

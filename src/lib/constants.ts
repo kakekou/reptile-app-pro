@@ -14,9 +14,9 @@ export const FOOD_OPTIONS: { type: FoodType; icon: string; label: string }[] = [
 
 /** 体調レベル */
 export const CONDITION_OPTIONS: { level: ConditionLevel; color: string; icon: string; label: string }[] = [
-  { level: '絶好調', color: '#22c55e', icon: 'HeartPulse', label: '絶好調' },
-  { level: '普通',   color: '#3b82f6', icon: 'Heart',      label: '普通' },
-  { level: '不調',   color: '#ef4444', icon: 'HeartCrack', label: '不調' },
+  { level: '絶好調', color: '#059669', icon: 'HeartPulse', label: '絶好調' },
+  { level: '普通',   color: '#2563eb', icon: 'Heart',      label: '普通' },
+  { level: '不調',   color: '#e11d48', icon: 'HeartCrack', label: '不調' },
 ];
 
 /** 種類 */
@@ -34,10 +34,10 @@ export const SEX_OPTIONS: { value: Sex; icon: string; label: string }[] = [
 
 /** ステータス */
 export const STATUS_OPTIONS: { value: IndividualStatus; color: string; label: string }[] = [
-  { value: '飼育中',   color: '#22c55e', label: '飼育中' },
-  { value: '売約済み', color: '#f59e0b', label: '売約済み' },
+  { value: '飼育中',   color: '#059669', label: '飼育中' },
+  { value: '売約済み', color: '#d97706', label: '売約済み' },
   { value: '譲渡済み', color: '#6b7280', label: '譲渡済み' },
-  { value: '死亡',     color: '#ef4444', label: '死亡' },
+  { value: '死亡',     color: '#e11d48', label: '死亡' },
 ];
 
 /** 症状タグの選択肢 */

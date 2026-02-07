@@ -58,7 +58,7 @@ export function MiniCalendar({ events, onMonthChange }: MiniCalendarProps) {
   };
 
   return (
-    <div className="rounded-[20px] bg-bg-secondary p-5 mx-5">
+    <div className="rounded-[20px] bg-bg-secondary border border-border shadow-sm p-5 mx-5">
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-4">
         <button onClick={goToPrev} className="p-1 text-text-tertiary hover:text-text-primary transition-colors">
@@ -117,7 +117,7 @@ export function MiniCalendar({ events, onMonthChange }: MiniCalendarProps) {
       </div>
 
       {/* 凡例 */}
-      <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-white/5">
+      <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-border">
         <Legend color="var(--accent-green)" label="給餌" />
         <Legend color="var(--accent-red)" label="体調" />
         <Legend color="var(--accent-purple)" label="脱皮" />

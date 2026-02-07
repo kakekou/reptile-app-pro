@@ -118,7 +118,7 @@ export default function FeedingPage() {
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-white/5">
+          <div className="mt-4 pt-4 border-t border-border">
             <button
               type="button"
               onClick={() => setRefused(!refused)}
@@ -140,7 +140,7 @@ export default function FeedingPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-[14px] bg-bg-tertiary px-4 py-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-blue/50 resize-none"
+            className="w-full rounded-[14px] bg-white border border-gray-300 px-4 py-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue resize-none"
           />
         </Card>
 
@@ -158,7 +158,7 @@ export default function FeedingPage() {
             <h3 className="text-[14px] font-semibold mb-3 text-text-secondary">最近の記録</h3>
             <div className="flex flex-col gap-2">
               {history.map((rec) => (
-                <div key={rec.id} className="rounded-[14px] bg-bg-secondary p-3 flex items-center justify-between">
+                <div key={rec.id} className="rounded-[14px] bg-bg-secondary border border-border shadow-sm p-3 flex items-center justify-between">
                   <div>
                     <span className="text-[14px] font-medium">
                       {rec.refused ? '拒食' : `${rec.food_type} × ${rec.quantity}`}

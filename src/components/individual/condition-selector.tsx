@@ -4,9 +4,9 @@ import { HeartPulse, Heart, HeartCrack } from 'lucide-react';
 import type { ConditionLevel } from '@/types/database';
 
 const CONDITIONS: { level: ConditionLevel; Icon: typeof Heart; color: string; label: string }[] = [
-  { level: '絶好調', Icon: HeartPulse, color: '#30d158', label: '絶好調' },
-  { level: '普通',   Icon: Heart,      color: '#0a84ff', label: '普通' },
-  { level: '不調',   Icon: HeartCrack, color: '#ff453a', label: '不調' },
+  { level: '絶好調', Icon: HeartPulse, color: '#059669', label: '絶好調' },
+  { level: '普通',   Icon: Heart,      color: '#2563eb', label: '普通' },
+  { level: '不調',   Icon: HeartCrack, color: '#e11d48', label: '不調' },
 ];
 
 interface ConditionSelectorProps {
@@ -31,7 +31,7 @@ export function ConditionSelector({ value, onChange }: ConditionSelectorProps) {
               ${isSelected ? '' : 'bg-bg-tertiary'}
             `}
             style={{
-              backgroundColor: isSelected ? `${color}15` : undefined,
+              backgroundColor: isSelected ? `${color}10` : undefined,
               outlineColor: isSelected ? color : undefined,
               outline: isSelected ? `2px solid ${color}` : undefined,
               outlineOffset: '-2px',

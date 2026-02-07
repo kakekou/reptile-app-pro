@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight, CircleDot, CircleDashed, HelpCircle, Scale, Utensils } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
 interface IndividualCardData {
@@ -24,9 +24,9 @@ const SEX_ICON = {
 } as const;
 
 const CONDITION_COLOR: Record<string, string> = {
-  '絶好調': '#30d158',
-  '普通':   '#0a84ff',
-  '不調':   '#ff453a',
+  '絶好調': '#059669',
+  '普通':   '#2563eb',
+  '不調':   '#e11d48',
 };
 
 const SPECIES_SHORT: Record<string, string> = {
@@ -40,7 +40,7 @@ export function IndividualCard({ data }: { data: IndividualCardData }) {
   return (
     <Link
       href={`/individuals/${data.id}`}
-      className="block rounded-[20px] bg-bg-secondary p-4 active:scale-[0.98] transition-transform"
+      className="block rounded-[20px] bg-bg-secondary border border-border shadow-sm p-4 active:scale-[0.98] transition-transform"
     >
       <div className="flex items-start gap-3">
         {/* アバター */}
@@ -62,7 +62,7 @@ export function IndividualCard({ data }: { data: IndividualCardData }) {
           </div>
 
           <div className="flex items-center gap-1.5 mt-0.5">
-            <Badge color="#6e6e73">
+            <Badge color="#6b7280">
               {SPECIES_SHORT[data.species] ?? data.species}
             </Badge>
             {data.morph && (

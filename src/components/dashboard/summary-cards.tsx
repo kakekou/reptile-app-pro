@@ -12,10 +12,10 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value, accent }: StatCardProps) {
   return (
-    <div className="rounded-[20px] bg-bg-secondary p-4 flex flex-col gap-3">
+    <div className="rounded-[20px] bg-bg-secondary border border-border shadow-sm p-4 flex flex-col gap-3">
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: `${accent}20` }}
+        style={{ backgroundColor: `${accent}15` }}
       >
         <div style={{ color: accent }}>{icon}</div>
       </div>

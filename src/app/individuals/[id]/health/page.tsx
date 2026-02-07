@@ -15,9 +15,9 @@ import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
 const CONDITION_COLORS: Record<string, string> = {
-  '絶好調': '#30d158',
-  '普通': '#0a84ff',
-  '不調': '#ff453a',
+  '絶好調': '#059669',
+  '普通': '#2563eb',
+  '不調': '#e11d48',
 };
 
 interface HealthRecord {
@@ -117,7 +117,7 @@ export default function HealthPage() {
                   className={`
                     rounded-full px-3 py-1.5 text-[13px] font-medium transition-all
                     ${selected
-                      ? 'bg-accent-red/15 text-accent-red ring-1 ring-accent-red/30'
+                      ? 'bg-accent-red/10 text-accent-red ring-1 ring-accent-red/30'
                       : 'bg-bg-tertiary text-text-tertiary'
                     }
                   `}
@@ -136,7 +136,7 @@ export default function HealthPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-[14px] bg-bg-tertiary px-4 py-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-blue/50 resize-none"
+            className="w-full rounded-[14px] bg-white border border-gray-300 px-4 py-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue resize-none"
           />
         </Card>
 
@@ -154,7 +154,7 @@ export default function HealthPage() {
             <h3 className="text-[14px] font-semibold mb-3 text-text-secondary">過去の記録</h3>
             <div className="flex flex-col gap-2">
               {history.map((rec) => (
-                <div key={rec.id} className="rounded-[14px] bg-bg-secondary p-3">
+                <div key={rec.id} className="rounded-[14px] bg-bg-secondary border border-border shadow-sm p-3">
                   <div className="flex items-center justify-between">
                     <span
                       className="text-[14px] font-bold"
