@@ -541,38 +541,82 @@ export default function WeeklyCareMatrixPage() {
         );
       }
 
-      // フン・尿・トグル系ケアはDB上にcare_logsテーブルが存在しないため
-      // 現時点ではhealth_logsのnotesに記録する（将来care_logsテーブル追加時に移行）
-      const careNotes: string[] = [];
-      if (poopInput) careNotes.push(`フン: ${poopInput}`);
-      if (urineInput) careNotes.push(`尿酸: ${urineInput}`);
-      for (const [careType, isOn] of Object.entries(toggleCares)) {
-        if (isOn && careType !== 'memo') careNotes.push(careType);
-      }
-      // 調子が未入力でもケアノートがある場合はhealth_logsに保存
-      if (careNotes.length > 0 && !conditionInput) {
-        promises.push(
-          supabase.from('health_logs').insert({
+      // 6. care_logs: フン・尿・トグル系ケア
+      console.log('=== care_logs insert ===');
+      console.log('poopInput:', poopInput, 'urineInput:', urineInput, 'toggleCares:', toggleCares);
+
+      // care_logsテーブルのスキーマ確認
+      const schemaCheck = await supabase.from('care_logs').select('*').limit(0);
+      console.log('care_logs schema check:', schemaCheck);
+
+      if (schemaCheck.error) {
+        console.error('care_logs table error:', schemaCheck.error);
+        // テーブルが無い or アクセス不可の場合はhealth_logs notesに退避
+        const careNotes: string[] = [];
+        if (poopInput) careNotes.push(`フン: ${poopInput}`);
+        if (urineInput) careNotes.push(`尿酸: ${urineInput}`);
+        for (const [careType, isOn] of Object.entries(toggleCares)) {
+          if (isOn && careType !== 'memo') careNotes.push(careType);
+        }
+        if (careNotes.length > 0 && !conditionInput) {
+          promises.push(
+            supabase.from('health_logs').insert({
+              user_id: userId,
+              individual_id: selectedId,
+              logged_on: modalDate,
+              condition: '普通',
+              symptoms: [],
+              notes: careNotes.join(', '),
+            }).select().then(r => r)
+          );
+        } else if (careNotes.length > 0 && conditionInput) {
+          promises[0] = supabase.from('health_logs').insert({
             user_id: userId,
             individual_id: selectedId,
             logged_on: modalDate,
-            condition: '普通',
+            condition: conditionInput,
             symptoms: [],
             notes: careNotes.join(', '),
-          }).select().then(r => r)
-        );
-      } else if (careNotes.length > 0 && conditionInput) {
-        // 調子も入力済みの場合、既に上で挿入したhealth_logsのnotesを更新できないので
-        // 別途notesをpromisesの最初のhealth_logsに含める形に修正
-        // → 上の調子insertにnotesを含めるため、promisesの先頭を差し替え
-        promises[0] = supabase.from('health_logs').insert({
-          user_id: userId,
-          individual_id: selectedId,
-          logged_on: modalDate,
-          condition: conditionInput,
-          symptoms: [],
-          notes: careNotes.join(', '),
-        }).select().then(r => r);
+          }).select().then(r => r);
+        }
+      } else {
+        // care_logsテーブルが存在する場合は直接insert
+        if (poopInput) {
+          console.log('Inserting poop:', poopInput);
+          promises.push(
+            supabase.from('care_logs').insert({
+              user_id: userId,
+              individual_id: selectedId,
+              logged_on: modalDate,
+              log_type: 'poop',
+              value: poopInput,
+            }).select().then(r => r)
+          );
+        }
+        if (urineInput) {
+          console.log('Inserting urine:', urineInput);
+          promises.push(
+            supabase.from('care_logs').insert({
+              user_id: userId,
+              individual_id: selectedId,
+              logged_on: modalDate,
+              log_type: 'urine',
+              value: urineInput,
+            }).select().then(r => r)
+          );
+        }
+        for (const [careType, isOn] of Object.entries(toggleCares)) {
+          if (!isOn || careType === 'memo') continue;
+          console.log('Inserting toggle care:', careType);
+          promises.push(
+            supabase.from('care_logs').insert({
+              user_id: userId,
+              individual_id: selectedId,
+              logged_on: modalDate,
+              log_type: careType,
+            }).select().then(r => r)
+          );
+        }
       }
 
       const results = await Promise.all(promises);
@@ -968,7 +1012,7 @@ export default function WeeklyCareMatrixPage() {
         >
             {/* ヘッダー */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
-              <button onClick={() => setModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => setModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
               <h2 className="text-base font-bold text-gray-900">
@@ -992,6 +1036,7 @@ export default function WeeklyCareMatrixPage() {
                 <div className="flex gap-2">
                   {CONDITION_LEVELS.map((c) => (
                     <button
+                      type="button"
                       key={c.label}
                       onClick={() => setConditionInput(conditionInput === c.label ? null : c.label)}
                       className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
@@ -1018,16 +1063,16 @@ export default function WeeklyCareMatrixPage() {
                     const isSelected = feedingInputs.some((f) => f.foodType === food.key);
                     return (
                       <button
+                        type="button"
                         key={food.key}
                         onClick={() => {
-                          if (isSelected) {
-                            setFeedingInputs((prev) => prev.filter((f) => f.foodType !== food.key));
-                          } else {
-                            setFeedingInputs((prev) => [
-                              ...prev,
-                              { foodType: food.key, quantity: 1, dusting: false, refused: false },
-                            ]);
-                          }
+                          setFeedingInputs((prev) => {
+                            const exists = prev.some((f) => f.foodType === food.key);
+                            if (exists) {
+                              return prev.filter((f) => f.foodType !== food.key);
+                            }
+                            return [...prev, { foodType: food.key, quantity: 1, dusting: false, refused: false }];
+                          });
                         }}
                         className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
                           ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
@@ -1047,6 +1092,7 @@ export default function WeeklyCareMatrixPage() {
                     {/* 数量 */}
                     <div className="flex items-center gap-1">
                       <button
+                        type="button"
                         onClick={() => {
                           setFeedingInputs((prev) =>
                             prev.map((f, i) =>
@@ -1060,6 +1106,7 @@ export default function WeeklyCareMatrixPage() {
                       </button>
                       <span className="text-sm font-bold w-6 text-center">{fi.quantity}</span>
                       <button
+                        type="button"
                         onClick={() => {
                           setFeedingInputs((prev) =>
                             prev.map((f, i) =>
@@ -1075,6 +1122,7 @@ export default function WeeklyCareMatrixPage() {
 
                     {/* ダスティング */}
                     <button
+                      type="button"
                       onClick={() => {
                         setFeedingInputs((prev) =>
                           prev.map((f, i) =>
@@ -1090,6 +1138,7 @@ export default function WeeklyCareMatrixPage() {
 
                     {/* 拒食 */}
                     <button
+                      type="button"
                       onClick={() => {
                         setFeedingInputs((prev) =>
                           prev.map((f, i) =>
@@ -1117,6 +1166,7 @@ export default function WeeklyCareMatrixPage() {
                   ].map((opt) => (
                     <button
                       key={opt.label}
+                      type="button"
                       onClick={() => setPoopInput(poopInput === opt.label ? null : opt.label)}
                       className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
                         ${poopInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
@@ -1139,6 +1189,7 @@ export default function WeeklyCareMatrixPage() {
                   ].map((opt) => (
                     <button
                       key={opt.label}
+                      type="button"
                       onClick={() => setUrineInput(urineInput === opt.label ? null : opt.label)}
                       className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
                         ${urineInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
@@ -1161,6 +1212,7 @@ export default function WeeklyCareMatrixPage() {
                   ].map((opt) => (
                     <button
                       key={opt.label}
+                      type="button"
                       onClick={() => setShedInput(shedInput === opt.label ? null : opt.label)}
                       className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
                         ${shedInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
@@ -1210,6 +1262,7 @@ export default function WeeklyCareMatrixPage() {
                     const isOn = toggleCares[item.key] ?? false;
                     return (
                       <button
+                        type="button"
                         key={item.key}
                         onClick={() =>
                           setToggleCares((prev) => ({ ...prev, [item.key]: !isOn }))
