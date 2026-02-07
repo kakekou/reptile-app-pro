@@ -111,7 +111,7 @@ export default function GrowthPage() {
         {/* 入力 */}
         <Card>
           <h3 className="text-[14px] font-semibold mb-3">新しい計測を記録</h3>
-          <div className="flex gap-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
               label="体重 (g)"
               type="number"
@@ -120,7 +120,7 @@ export default function GrowthPage() {
               placeholder="例: 45.5"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              className="flex-1"
+              className="w-full"
             />
             <Input
               label="体長 (cm)"
@@ -130,7 +130,7 @@ export default function GrowthPage() {
               placeholder="例: 18.0"
               value={length}
               onChange={(e) => setLength(e.target.value)}
-              className="flex-1"
+              className="w-full"
             />
           </div>
         </Card>
