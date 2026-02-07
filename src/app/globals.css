@@ -107,6 +107,14 @@ body {
   scrollbar-width: none;
 }
 
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+.overflow-x-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ============================================================
    セーフエリア (iOS PWA 対応)
    ============================================================ */
