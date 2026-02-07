@@ -438,19 +438,19 @@ export default function WeeklyCareMatrixPage() {
 
             {/* C-2. グリッド本体 */}
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed">
+              <table className="w-full table-fixed border-collapse">
                 <colgroup>
                   <col style={{ width: "60px" }} />
                   <col /><col /><col /><col /><col /><col /><col />
                 </colgroup>
                 <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="py-2 sticky left-0 z-10 bg-white"></th>
+                  <tr>
+                    <th className="py-2 sticky left-0 z-10 bg-white border border-gray-200"></th>
                     {weekDates.map((date) => {
                       const { day, weekday } = formatDate(date);
                       const isToday = date === todayString;
                       return (
-                        <th key={date} className="py-2 text-center">
+                        <th key={date} className="py-2 text-center border border-gray-200">
                           <div className="flex flex-col items-center gap-0.5">
                             <span className="text-xs text-gray-400 font-medium">{weekday}</span>
                             {isToday ? (
@@ -468,8 +468,8 @@ export default function WeeklyCareMatrixPage() {
                 </thead>
                 <tbody>
                   {CARE_ITEMS.map((care) => (
-                    <tr key={care.type} className="border-t border-gray-200">
-                      <td className="py-3 px-2 text-left sticky left-0 z-10 bg-white border-r border-gray-200">
+                    <tr key={care.type}>
+                      <td className="py-3 px-2 text-left sticky left-0 z-10 bg-white border border-gray-200">
                         <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{care.label}</span>
                       </td>
                       {weekDates.map((date) => {
@@ -480,7 +480,7 @@ export default function WeeklyCareMatrixPage() {
                         return (
                           <td
                             key={date}
-                            className={`py-2 px-1 text-center border-t border-gray-100 ${isToday ? "bg-blue-50/40" : ""}`}
+                            className={`py-2 px-1 text-center border border-gray-200 ${isToday ? "bg-blue-50/40" : ""}`}
                           >
                             <div className="w-full h-10 flex items-center justify-center">
                               {renderCellContent(care, dayEvents)}
