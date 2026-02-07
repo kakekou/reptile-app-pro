@@ -115,19 +115,28 @@ const FOOD_ICONS: Record<string, { icon: React.ComponentType<{ className?: strin
   "その他":       { icon: Plus,         color: "text-gray-500" },
 };
 
-const CONDITION_COLORS: Record<string, string> = {
-  "絶好調": "text-emerald-500",
-  "普通":   "text-gray-400",
-  "不調":   "text-red-500",
-};
-
 const CONDITION_LEVELS = [
-  { label: "絶好調", emoji: "😆" },
-  { label: "好調",   emoji: "😊" },
-  { label: "普通",   emoji: "😐" },
-  { label: "不調",   emoji: "😞" },
-  { label: "絶不調", emoji: "😵" },
+  { value: "絶好調", label: "好調", emoji: "😊", color: "text-emerald-500", border: "border-emerald-400", bg: "bg-emerald-50", ring: "ring-emerald-200" },
+  { value: "普通",   label: "普通", emoji: "😐", color: "text-gray-400",    border: "border-gray-300",    bg: "bg-gray-50",    ring: "ring-gray-200" },
+  { value: "不調",   label: "不調", emoji: "😞", color: "text-red-500",     border: "border-red-400",     bg: "bg-red-50",     ring: "ring-red-200" },
 ];
+
+const CONDITION_MAP: Record<string, string> = Object.fromEntries(
+  CONDITION_LEVELS.map((c) => [c.value, c.value])
+);
+// 旧5段階の後方互換マッピング
+CONDITION_MAP["好調"] = "絶好調";
+CONDITION_MAP["絶不調"] = "不調";
+
+function mapConditionValue(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  return CONDITION_MAP[raw] ?? null;
+}
+
+function getConditionLevel(value: string | null | undefined) {
+  const mapped = mapConditionValue(value);
+  return CONDITION_LEVELS.find((c) => c.value === mapped) ?? CONDITION_LEVELS[1];
+}
 
 const FOOD_OPTIONS = [
   { key: "コオロギ",     icon: Bug,          color: "text-amber-700",  bg: "bg-amber-50" },
@@ -287,7 +296,7 @@ function normalizeEvents(
   const healthEvents: CareEvent[] = (healthData ?? []).map((h) => ({
     type: "condition" as CareType,
     date: h.logged_on.slice(0, 10),
-    condition: h.condition,
+    condition: mapConditionValue(h.condition) ?? "普通",
   }));
 
   const careLogEvents: CareEvent[] = (careData ?? []).map((c) => ({
@@ -325,9 +334,8 @@ function renderCellContent(care: CareItem, dayEvents: CareEvent[]) {
       );
 
     case "condition": {
-      const cond = dayEvents[0].condition ?? "普通";
-      const condColor = CONDITION_COLORS[cond] ?? "text-gray-400";
-      return <HeartPulse className={`w-5 h-5 ${condColor}`} />;
+      const cl = getConditionLevel(dayEvents[0].condition);
+      return <span className="text-lg leading-none">{cl.emoji}</span>;
     }
 
     case "weight": {
@@ -365,8 +373,8 @@ function renderMonthCellIcons(dayEvents: CareEvent[]) {
 
     if (care.type === "condition") {
       const condEvent = dayEvents.find((e) => e.type === "condition");
-      const condColor = CONDITION_COLORS[condEvent?.condition ?? "普通"] ?? "text-gray-400";
-      return <care.icon key={care.type} className={`w-4 h-4 ${condColor}`} />;
+      const cl = getConditionLevel(condEvent?.condition);
+      return <span key={care.type} className="text-sm leading-none">{cl.emoji}</span>;
     }
 
     return <care.icon key={care.type} className={`w-4 h-4 ${care.color}`} />;
@@ -462,7 +470,7 @@ export default function WeeklyCareMatrixPage() {
 
     // health_logs
     if (healthRes.data?.[0]) {
-      setConditionInput(healthRes.data[0].condition);
+      setConditionInput(mapConditionValue(healthRes.data[0].condition));
       setExistingHealthLogId(healthRes.data[0].id);
     }
 
@@ -1034,22 +1042,25 @@ export default function WeeklyCareMatrixPage() {
               {/* 1. 体調 */}
               <section>
                 <h3 className="text-sm font-bold text-gray-700 mb-2">体調</h3>
-                <div className="flex gap-2">
-                  {CONDITION_LEVELS.map((c) => (
-                    <button
-                      type="button"
-                      key={c.label}
-                      onClick={() => setConditionInput(conditionInput === c.label ? null : c.label)}
-                      className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
-                        ${conditionInput === c.label
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 bg-white"
-                        }`}
-                    >
-                      <span className="text-xl">{c.emoji}</span>
-                      <span className="text-[10px] text-gray-500">{c.label}</span>
-                    </button>
-                  ))}
+                <div className="flex gap-3 justify-center">
+                  {CONDITION_LEVELS.map((c) => {
+                    const isSelected = conditionInput === c.value;
+                    return (
+                      <button
+                        type="button"
+                        key={c.value}
+                        onClick={() => setConditionInput(isSelected ? null : c.value)}
+                        className={`flex flex-col items-center gap-1.5 py-3 px-5 rounded-2xl border-2 transition-all
+                          ${isSelected
+                            ? `${c.border} ${c.bg} ring-2 ${c.ring} scale-105`
+                            : "border-gray-200 bg-white"
+                          }`}
+                      >
+                        <span className="text-3xl">{c.emoji}</span>
+                        <span className={`text-xs font-medium ${isSelected ? c.color : "text-gray-500"}`}>{c.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
 
