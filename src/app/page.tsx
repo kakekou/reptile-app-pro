@@ -18,6 +18,7 @@ import {
   Sparkles,
   Weight,
 } from "lucide-react";
+// Note: Icons are used in renderCellContent for data cells, not for row labels
 import { createClient } from "@/lib/supabase/client";
 
 // ── 型定義 ──────────────────────────────────────────────
@@ -165,7 +166,7 @@ function renderCellContent(care: CareItem, dayEvents: CareEvent[]) {
             };
             return (
               <div key={i} className="relative">
-                <span className={`text-[11px] font-bold ${foodIcon.color}`}>
+                <span className={`text-xs font-bold ${foodIcon.color}`}>
                   {foodIcon.symbol}
                 </span>
                 {f.dusting && (
@@ -180,19 +181,19 @@ function renderCellContent(care: CareItem, dayEvents: CareEvent[]) {
     case "condition": {
       const cond = dayEvents[0].condition ?? "普通";
       const condColor = CONDITION_COLORS[cond] ?? "text-gray-400";
-      return <HeartPulse className={`w-3.5 h-3.5 ${condColor}`} />;
+      return <HeartPulse className={`w-5 h-5 ${condColor}`} />;
     }
 
     case "weight": {
       const w = dayEvents[0].weight_g;
       if (w != null && w > 0) {
-        return <span className="text-[10px] font-bold text-emerald-600">{w}</span>;
+        return <span className="text-[11px] font-bold text-emerald-600">{w}</span>;
       }
-      return <Icon className={`w-3.5 h-3.5 ${care.color}`} />;
+      return <Icon className={`w-5 h-5 ${care.color}`} />;
     }
 
     default:
-      return <Icon className={`w-3.5 h-3.5 ${care.color}`} />;
+      return <Icon className={`w-5 h-5 ${care.color}`} />;
   }
 }
 
@@ -431,25 +432,25 @@ export default function WeeklyCareMatrixPage() {
             <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: "48px" }} />
+                  <col style={{ width: "60px" }} />
                   <col /><col /><col /><col /><col /><col /><col />
                 </colgroup>
                 <thead>
-                  <tr>
-                    <th className="p-0.5 sticky left-0 z-10 bg-white"></th>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="py-2 sticky left-0 z-10 bg-white"></th>
                     {weekDates.map((date) => {
                       const { day, weekday } = formatDate(date);
                       const isToday = date === todayString;
                       return (
-                        <th key={date} className="p-0.5 text-center">
-                          <div className="flex flex-col items-center gap-0.5 py-1">
-                            <span className="text-[10px] text-gray-400 font-medium leading-none">{weekday}</span>
+                        <th key={date} className="py-2 text-center">
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-xs text-gray-400 font-medium">{weekday}</span>
                             {isToday ? (
-                              <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold inline-flex items-center justify-center mt-0.5">
+                              <span className="w-8 h-8 rounded-full bg-blue-600 text-white text-base font-bold inline-flex items-center justify-center">
                                 {day}
                               </span>
                             ) : (
-                              <span className="text-xs font-bold text-gray-800 mt-0.5">{day}</span>
+                              <span className="text-base font-bold text-gray-800">{day}</span>
                             )}
                           </div>
                         </th>
@@ -458,55 +459,45 @@ export default function WeeklyCareMatrixPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {CARE_ITEMS.map((care) => {
-                    const Icon = care.icon;
-                    return (
-                      <tr key={care.type} className="border-t border-gray-100">
-                        <td className="p-0.5 text-center sticky left-0 z-10 bg-white border-r border-gray-100">
-                          <div className="flex flex-col items-center gap-0.5">
-                            {care.type === "feeding" ? (
-                              <span className="text-[11px] font-bold text-amber-600 leading-none">餌</span>
-                            ) : (
-                              <Icon className={`w-3.5 h-3.5 ${care.color}`} />
-                            )}
-                            <span className="text-[9px] text-gray-400 font-medium leading-none mt-0.5">{care.label}</span>
-                          </div>
-                        </td>
-                        {weekDates.map((date) => {
-                          const isToday = date === todayString;
-                          const dayEvents = events.filter(
-                            (e) => e.type === care.type && e.date === date
-                          );
-                          return (
-                            <td
-                              key={date}
-                              className={`p-0.5 text-center ${isToday ? "bg-blue-50/40" : ""}`}
-                            >
-                              <div className="w-full h-8 flex items-center justify-center">
-                                {renderCellContent(care, dayEvents)}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
+                  {CARE_ITEMS.map((care) => (
+                    <tr key={care.type} className="border-t border-gray-200">
+                      <td className="py-3 px-2 text-left sticky left-0 z-10 bg-white border-r border-gray-200">
+                        <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{care.label}</span>
+                      </td>
+                      {weekDates.map((date) => {
+                        const isToday = date === todayString;
+                        const dayEvents = events.filter(
+                          (e) => e.type === care.type && e.date === date
+                        );
+                        return (
+                          <td
+                            key={date}
+                            className={`py-2 px-1 text-center border-t border-gray-100 ${isToday ? "bg-blue-50/40" : ""}`}
+                          >
+                            <div className="w-full h-10 flex items-center justify-center">
+                              {renderCellContent(care, dayEvents)}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
             {/* 凡例 */}
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-3 py-2 border-t border-gray-50">
-              <span className="text-[10px] text-gray-300">凡例:</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 border-t border-gray-200">
+              <span className="text-[11px] text-gray-300">凡例:</span>
               {Object.entries(FOOD_ICONS).map(([name, f]) => (
                 <span key={name} className="flex items-center gap-0.5">
-                  <span className={`text-[10px] font-bold ${f.color}`}>{f.symbol}</span>
-                  <span className="text-[9px] text-gray-400">{name}</span>
+                  <span className={`text-[11px] font-bold ${f.color}`}>{f.symbol}</span>
+                  <span className="text-[10px] text-gray-400">{name}</span>
                 </span>
               ))}
               <span className="flex items-center gap-0.5">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                <span className="text-[9px] text-gray-400">Ca+</span>
+                <span className="text-[10px] text-gray-400">Ca+</span>
               </span>
             </div>
           </div>
