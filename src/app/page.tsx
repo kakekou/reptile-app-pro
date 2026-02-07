@@ -512,10 +512,34 @@ export default function WeeklyCareMatrixPage() {
     if (!selectedId || !modalDate) return;
     setSaving(true);
 
+    // ── 楽観的UI更新: 入力値からeventsを即座に構築 ──
+    const previousEvents = [...events];
+    const newDayEvents: CareEvent[] = [];
+    if (conditionInput) newDayEvents.push({ type: 'condition', date: modalDate, condition: conditionInput });
+    for (const fi of feedingInputs) {
+      newDayEvents.push({ type: 'feeding', date: modalDate, foodType: fi.foodType });
+    }
+    if (poopInput) newDayEvents.push({ type: 'poop', date: modalDate });
+    if (urineInput) newDayEvents.push({ type: 'urine', date: modalDate });
+    if (shedInput) newDayEvents.push({ type: 'shedding', date: modalDate });
+    if (weightInput && parseFloat(weightInput) > 0) {
+      newDayEvents.push({ type: 'weight', date: modalDate, weight_g: parseFloat(weightInput) });
+    }
+    for (const [ct, isOn] of Object.entries(toggleCares)) {
+      if (isOn) newDayEvents.push({ type: ct as CareType, date: modalDate });
+    }
+    if (memoInput && !toggleCares['memo']) {
+      newDayEvents.push({ type: 'memo', date: modalDate });
+    }
+
+    // この日のeventsを差し替え
+    setEvents(prev => [...prev.filter(e => e.date !== modalDate), ...newDayEvents]);
+    setModalOpen(false);
+
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { console.error('Save error: not authenticated'); return; }
+      if (!user) { console.error('Save error: not authenticated'); setEvents(previousEvents); return; }
       const userId = user.id;
       const ops: PromiseLike<any>[] = [];
 
@@ -527,36 +551,14 @@ export default function WeeklyCareMatrixPage() {
         insertData: Record<string, any>,
         updateData: Record<string, any>,
       ) => {
-        console.log(`[upsertOrDelete] ${table}: hasValue=${hasValue}, existingId=${existingId}`);
         if (hasValue && existingId) {
-          console.log(`  → UPDATE ${table} id=${existingId}`, updateData);
-          ops.push(supabase.from(table).update(updateData).eq('id', existingId).select().then(r => {
-            if (r.error) console.error(`  UPDATE ${table} error:`, r.error);
-            return r;
-          }));
+          ops.push(supabase.from(table).update(updateData).eq('id', existingId).select().then(r => r));
         } else if (hasValue && !existingId) {
-          console.log(`  → INSERT ${table}`, insertData);
-          ops.push(supabase.from(table).insert(insertData).select().then(r => {
-            if (r.error) console.error(`  INSERT ${table} error:`, r.error);
-            return r;
-          }));
+          ops.push(supabase.from(table).insert(insertData).select().then(r => r));
         } else if (!hasValue && existingId) {
-          console.log(`  → DELETE ${table} id=${existingId}`);
-          ops.push(supabase.from(table).delete().eq('id', existingId).select().then(r => {
-            if (r.error) console.error(`  DELETE ${table} error:`, r.error);
-            return r;
-          }));
-        } else {
-          console.log(`  → SKIP ${table} (no value, no existing)`);
+          ops.push(supabase.from(table).delete().eq('id', existingId).then(r => r));
         }
       };
-
-      console.log('=== handleSave state ===');
-      console.log('conditionInput:', JSON.stringify(conditionInput), 'existingHealthLogId:', existingHealthLogId);
-      console.log('urineInput:', JSON.stringify(urineInput), 'existingCareLogIds.urine:', existingCareLogIds['urine']);
-      console.log('weightInput:', JSON.stringify(weightInput), 'existingMeasurementId:', existingMeasurementId);
-      console.log('shedInput:', JSON.stringify(shedInput), 'existingShedId:', existingShedId);
-      console.log('poopInput:', JSON.stringify(poopInput), 'existingCareLogIds.poop:', existingCareLogIds['poop']);
 
       // 1. 調子 → health_logs
       upsertOrDelete('health_logs', existingHealthLogId, !!conditionInput,
@@ -583,13 +585,16 @@ export default function WeeklyCareMatrixPage() {
         { completeness: shedComp },
       );
 
-      // 4. 体重 → measurements
-      const hasWeight = !!(weightInput && parseFloat(weightInput) > 0);
-      upsertOrDelete('measurements', existingMeasurementId, hasWeight,
+      // 4. 体重・体長 → measurements（両方空なら DELETE）
+      const hasMeasurement = !!(
+        (weightInput && parseFloat(weightInput) > 0) ||
+        (lengthInput && parseFloat(lengthInput) > 0)
+      );
+      upsertOrDelete('measurements', existingMeasurementId, hasMeasurement,
         { user_id: userId, individual_id: selectedId, measured_on: modalDate,
-          weight_g: hasWeight ? parseFloat(weightInput) : null,
+          weight_g: weightInput ? parseFloat(weightInput) : null,
           length_cm: lengthInput ? parseFloat(lengthInput) : null },
-        { weight_g: hasWeight ? parseFloat(weightInput) : null,
+        { weight_g: weightInput ? parseFloat(weightInput) : null,
           length_cm: lengthInput ? parseFloat(lengthInput) : null },
       );
 
@@ -611,15 +616,19 @@ export default function WeeklyCareMatrixPage() {
 
       const results = await Promise.all(ops);
       const errors = results.filter(r => r?.error);
-      if (errors.length > 0) console.error('Save errors:', errors.map(e => e.error));
-
-      setModalOpen(false);
-      resetAllInputs();
-      setRefetchCount(c => c + 1);
+      if (errors.length > 0) {
+        console.error('Save errors:', errors.map(e => e.error));
+        // エラー時はロールバックして再fetch
+        setEvents(previousEvents);
+        setRefetchCount(c => c + 1);
+      }
 
     } catch (error) {
       console.error('Save error:', error);
+      setEvents(previousEvents);
+      setRefetchCount(c => c + 1);
     } finally {
+      resetAllInputs();
       setSaving(false);
     }
   };
