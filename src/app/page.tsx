@@ -28,12 +28,6 @@ interface CareEvent {
   dusting?: boolean;
 }
 
-interface FoodIcon {
-  type: string;
-  symbol: string;
-  color: string;
-}
-
 // ── 定数 ──────────────────────────────────────────────
 
 const CARE_ITEMS: CareItem[] = [
@@ -44,11 +38,15 @@ const CARE_ITEMS: CareItem[] = [
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
-const FOOD_ICONS: Record<string, FoodIcon> = {
-  "コオロギ":   { type: "コオロギ",   symbol: "コ", color: "text-amber-700" },
-  "デュビア":   { type: "デュビア",   symbol: "デ", color: "text-red-600" },
-  "ミルワーム": { type: "ミルワーム", symbol: "ミ", color: "text-yellow-600" },
-  "人工フード": { type: "人工フード", symbol: "人", color: "text-blue-600" },
+const FOOD_ICONS: Record<string, { symbol: string; color: string }> = {
+  "コオロギ":     { symbol: "コ", color: "text-amber-700" },
+  "デュビア":     { symbol: "デ", color: "text-red-700" },
+  "ミルワーム":   { symbol: "ミ", color: "text-yellow-600" },
+  "ピンクマウス": { symbol: "ピ", color: "text-pink-500" },
+  "ヒヨコ":       { symbol: "ヒ", color: "text-orange-400" },
+  "卵":           { symbol: "卵", color: "text-amber-400" },
+  "人工フード":   { symbol: "人", color: "text-blue-600" },
+  "その他":       { symbol: "他", color: "text-gray-500" },
 };
 
 // ── ユーティリティ関数 ─────────────────────────────────
@@ -296,14 +294,8 @@ export default function WeeklyCareMatrixPage() {
             <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col className="w-[52px]" />
-                  <col />
-                  <col />
-                  <col />
-                  <col />
-                  <col />
-                  <col />
-                  <col />
+                  <col style={{ width: "48px" }} />
+                  <col /><col /><col /><col /><col /><col /><col />
                 </colgroup>
                 <thead>
                   <tr>
@@ -396,12 +388,12 @@ export default function WeeklyCareMatrixPage() {
             </div>
 
             {/* 凡例 */}
-            <div className="flex items-center gap-3 px-4 py-2 border-t border-gray-50">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-3 py-2 border-t border-gray-50">
               <span className="text-[10px] text-gray-300">凡例:</span>
-              {Object.values(FOOD_ICONS).map((f) => (
-                <span key={f.type} className="flex items-center gap-0.5">
+              {Object.entries(FOOD_ICONS).map(([name, f]) => (
+                <span key={name} className="flex items-center gap-0.5">
                   <span className={`text-[10px] font-bold ${f.color}`}>{f.symbol}</span>
-                  <span className="text-[9px] text-gray-400">{f.type}</span>
+                  <span className="text-[9px] text-gray-400">{name}</span>
                 </span>
               ))}
               <span className="flex items-center gap-0.5">
