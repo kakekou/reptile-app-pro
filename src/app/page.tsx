@@ -264,6 +264,8 @@ function normalizeEvents(
   measData: any[] | null,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   healthData: any[] | null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  careData: any[] | null,
 ): CareEvent[] {
   const feedEvents: CareEvent[] = (feedData ?? []).map((f) => ({
     type: "feeding" as CareType,
@@ -288,7 +290,12 @@ function normalizeEvents(
     condition: h.condition,
   }));
 
-  return [...feedEvents, ...shedEvents, ...measEvents, ...healthEvents];
+  const careLogEvents: CareEvent[] = (careData ?? []).map((c) => ({
+    type: c.care_type as CareType,
+    date: c.logged_on.slice(0, 10),
+  }));
+
+  return [...feedEvents, ...shedEvents, ...measEvents, ...healthEvents, ...careLogEvents];
 }
 
 // ── セル描画（週表示用） ──────────────────────────────
@@ -529,94 +536,47 @@ export default function WeeklyCareMatrixPage() {
         );
       }
 
-      // 5. メモ → memos
-      if (memoInput) {
-        promises.push(
-          supabase.from('memos').insert({
-            user_id: userId,
-            individual_id: selectedId,
-            title: modalDate,
-            body: memoInput,
-          }).select().then(r => r)
-        );
+      // 5. care_logs: フン・尿・トグル系ケア・メモ
+      // care_type: poop, urine, cleaning, bathing, handling, water_change, medication, hospital, mating, egg_laying, memo, photo
+      if (poopInput) {
+        const payload = { user_id: userId, individual_id: selectedId, logged_on: modalDate, care_type: 'poop', value: poopInput };
+        console.log('care_logs payload:', JSON.stringify(payload));
+        promises.push(supabase.from('care_logs').insert(payload).select().then(r => {
+          if (r.error) console.error('care_logs insert error:', r.error.message, r.error.details);
+          return r;
+        }));
       }
-
-      // 6. care_logs: フン・尿・トグル系ケア
-      console.log('=== care_logs insert ===');
-      console.log('poopInput:', poopInput, 'urineInput:', urineInput, 'toggleCares:', toggleCares);
-
-      // care_logsテーブルのスキーマ確認
-      const schemaCheck = await supabase.from('care_logs').select('*').limit(0);
-      console.log('care_logs schema check:', schemaCheck);
-
-      if (schemaCheck.error) {
-        console.error('care_logs table error:', schemaCheck.error);
-        // テーブルが無い or アクセス不可の場合はhealth_logs notesに退避
-        const careNotes: string[] = [];
-        if (poopInput) careNotes.push(`フン: ${poopInput}`);
-        if (urineInput) careNotes.push(`尿酸: ${urineInput}`);
-        for (const [careType, isOn] of Object.entries(toggleCares)) {
-          if (isOn && careType !== 'memo') careNotes.push(careType);
-        }
-        if (careNotes.length > 0 && !conditionInput) {
-          promises.push(
-            supabase.from('health_logs').insert({
-              user_id: userId,
-              individual_id: selectedId,
-              logged_on: modalDate,
-              condition: '普通',
-              symptoms: [],
-              notes: careNotes.join(', '),
-            }).select().then(r => r)
-          );
-        } else if (careNotes.length > 0 && conditionInput) {
-          promises[0] = supabase.from('health_logs').insert({
-            user_id: userId,
-            individual_id: selectedId,
-            logged_on: modalDate,
-            condition: conditionInput,
-            symptoms: [],
-            notes: careNotes.join(', '),
-          }).select().then(r => r);
-        }
-      } else {
-        // care_logsテーブルが存在する場合は直接insert
-        if (poopInput) {
-          console.log('Inserting poop:', poopInput);
-          promises.push(
-            supabase.from('care_logs').insert({
-              user_id: userId,
-              individual_id: selectedId,
-              logged_on: modalDate,
-              log_type: 'poop',
-              value: poopInput,
-            }).select().then(r => r)
-          );
-        }
-        if (urineInput) {
-          console.log('Inserting urine:', urineInput);
-          promises.push(
-            supabase.from('care_logs').insert({
-              user_id: userId,
-              individual_id: selectedId,
-              logged_on: modalDate,
-              log_type: 'urine',
-              value: urineInput,
-            }).select().then(r => r)
-          );
-        }
-        for (const [careType, isOn] of Object.entries(toggleCares)) {
-          if (!isOn || careType === 'memo') continue;
-          console.log('Inserting toggle care:', careType);
-          promises.push(
-            supabase.from('care_logs').insert({
-              user_id: userId,
-              individual_id: selectedId,
-              logged_on: modalDate,
-              log_type: careType,
-            }).select().then(r => r)
-          );
-        }
+      if (urineInput) {
+        const payload = { user_id: userId, individual_id: selectedId, logged_on: modalDate, care_type: 'urine', value: urineInput };
+        console.log('care_logs payload:', JSON.stringify(payload));
+        promises.push(supabase.from('care_logs').insert(payload).select().then(r => {
+          if (r.error) console.error('care_logs insert error:', r.error.message, r.error.details);
+          return r;
+        }));
+      }
+      for (const [careType, isOn] of Object.entries(toggleCares)) {
+        if (!isOn) continue;
+        const payload = {
+          user_id: userId,
+          individual_id: selectedId,
+          logged_on: modalDate,
+          care_type: careType,
+          value: careType === 'memo' ? memoInput : null,
+        };
+        console.log('care_logs payload:', JSON.stringify(payload));
+        promises.push(supabase.from('care_logs').insert(payload).select().then(r => {
+          if (r.error) console.error('care_logs insert error:', r.error.message, r.error.details);
+          return r;
+        }));
+      }
+      // メモ（トグルに含まれていなくてもテキストがあれば保存）
+      if (memoInput && !toggleCares['memo']) {
+        const payload = { user_id: userId, individual_id: selectedId, logged_on: modalDate, care_type: 'memo', value: memoInput };
+        console.log('care_logs payload:', JSON.stringify(payload));
+        promises.push(supabase.from('care_logs').insert(payload).select().then(r => {
+          if (r.error) console.error('care_logs insert error:', r.error.message, r.error.details);
+          return r;
+        }));
       }
 
       const results = await Promise.all(promises);
@@ -688,13 +648,17 @@ export default function WeeklyCareMatrixPage() {
       supabase.from("health_logs").select("id, logged_on, condition")
         .eq("individual_id", selectedId)
         .gte("logged_on", startDate).lte("logged_on", endDate),
-    ]).then(([feedRes, shedRes, measRes, healthRes]) => {
+      supabase.from("care_logs").select("id, care_type, logged_on")
+        .eq("individual_id", selectedId)
+        .gte("logged_on", startDate).lte("logged_on", endDate),
+    ]).then(([feedRes, shedRes, measRes, healthRes, careRes]) => {
       if (feedRes.error) console.error("Failed to fetch feedings:", feedRes.error);
       if (shedRes.error) console.error("Failed to fetch sheds:", shedRes.error);
       if (measRes.error) console.error("Failed to fetch measurements:", measRes.error);
       if (healthRes.error) console.error("Failed to fetch health_logs:", healthRes.error);
+      if (careRes.error) console.error("Failed to fetch care_logs:", careRes.error);
 
-      setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data));
+      setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data, careRes.data));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, selectedId, weekOffset, refetchCount]);
@@ -719,13 +683,17 @@ export default function WeeklyCareMatrixPage() {
       supabase.from("health_logs").select("id, logged_on, condition")
         .eq("individual_id", selectedId)
         .gte("logged_on", startDate).lte("logged_on", endDate),
-    ]).then(([feedRes, shedRes, measRes, healthRes]) => {
+      supabase.from("care_logs").select("id, care_type, logged_on")
+        .eq("individual_id", selectedId)
+        .gte("logged_on", startDate).lte("logged_on", endDate),
+    ]).then(([feedRes, shedRes, measRes, healthRes, careRes]) => {
       if (feedRes.error) console.error("Failed to fetch feedings:", feedRes.error);
       if (shedRes.error) console.error("Failed to fetch sheds:", shedRes.error);
       if (measRes.error) console.error("Failed to fetch measurements:", measRes.error);
       if (healthRes.error) console.error("Failed to fetch health_logs:", healthRes.error);
+      if (careRes.error) console.error("Failed to fetch care_logs:", careRes.error);
 
-      setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data));
+      setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data, careRes.data));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, selectedId, monthOffset, refetchCount]);
