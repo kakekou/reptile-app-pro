@@ -527,14 +527,36 @@ export default function WeeklyCareMatrixPage() {
         insertData: Record<string, any>,
         updateData: Record<string, any>,
       ) => {
+        console.log(`[upsertOrDelete] ${table}: hasValue=${hasValue}, existingId=${existingId}`);
         if (hasValue && existingId) {
-          ops.push(supabase.from(table).update(updateData).eq('id', existingId).select().then(r => r));
+          console.log(`  → UPDATE ${table} id=${existingId}`, updateData);
+          ops.push(supabase.from(table).update(updateData).eq('id', existingId).select().then(r => {
+            if (r.error) console.error(`  UPDATE ${table} error:`, r.error);
+            return r;
+          }));
         } else if (hasValue && !existingId) {
-          ops.push(supabase.from(table).insert(insertData).select().then(r => r));
+          console.log(`  → INSERT ${table}`, insertData);
+          ops.push(supabase.from(table).insert(insertData).select().then(r => {
+            if (r.error) console.error(`  INSERT ${table} error:`, r.error);
+            return r;
+          }));
         } else if (!hasValue && existingId) {
-          ops.push(supabase.from(table).delete().eq('id', existingId).then(r => r));
+          console.log(`  → DELETE ${table} id=${existingId}`);
+          ops.push(supabase.from(table).delete().eq('id', existingId).select().then(r => {
+            if (r.error) console.error(`  DELETE ${table} error:`, r.error);
+            return r;
+          }));
+        } else {
+          console.log(`  → SKIP ${table} (no value, no existing)`);
         }
       };
+
+      console.log('=== handleSave state ===');
+      console.log('conditionInput:', JSON.stringify(conditionInput), 'existingHealthLogId:', existingHealthLogId);
+      console.log('urineInput:', JSON.stringify(urineInput), 'existingCareLogIds.urine:', existingCareLogIds['urine']);
+      console.log('weightInput:', JSON.stringify(weightInput), 'existingMeasurementId:', existingMeasurementId);
+      console.log('shedInput:', JSON.stringify(shedInput), 'existingShedId:', existingShedId);
+      console.log('poopInput:', JSON.stringify(poopInput), 'existingCareLogIds.poop:', existingCareLogIds['poop']);
 
       // 1. 調子 → health_logs
       upsertOrDelete('health_logs', existingHealthLogId, !!conditionInput,
