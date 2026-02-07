@@ -590,6 +590,7 @@ export default function WeeklyCareMatrixPage() {
   }, [viewMode, selectedId, monthOffset]);
 
   return (
+    <>
     <div className="bg-gray-50 min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         {/* A. ヘッダー */}
@@ -867,25 +868,23 @@ export default function WeeklyCareMatrixPage() {
           </div>
         )}
       </div>
+    </div>
 
-      {/* ── モーダル（ボトムシート） ── */}
-      {modalOpen && (
+    {/* ── モーダル（ボトムシート）── ページの外側に配置 */}
+    {modalOpen && (
+      <>
+        {/* 背景オーバーレイ */}
         <div
-          className="fixed inset-0 flex items-end justify-center"
-          style={{ zIndex: 9999 }}
-        >
-          {/* 背景オーバーレイ */}
-          <div
-            className="absolute inset-0"
-            style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
-            onClick={() => setModalOpen(false)}
-          />
+          className="fixed inset-0 bg-black/30"
+          style={{ zIndex: 9998 }}
+          onClick={() => setModalOpen(false)}
+        />
 
-          {/* シート本体 */}
-          <div
-            className="relative w-full max-w-lg bg-white rounded-t-2xl animate-slide-up flex flex-col"
-            style={{ maxHeight: "85vh" }}
-          >
+        {/* シート本体 */}
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-xl animate-slide-up"
+          style={{ zIndex: 9999, maxHeight: "90vh", overflowY: "auto" }}
+        >
             {/* ヘッダー */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
               <button onClick={() => setModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
@@ -904,7 +903,7 @@ export default function WeeklyCareMatrixPage() {
             </div>
 
             {/* スクロールエリア */}
-            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-6">
+            <div className="px-5 py-4 space-y-6">
 
               {/* 1. 体調 */}
               <section>
@@ -1163,9 +1162,9 @@ export default function WeeklyCareMatrixPage() {
               {/* 下部余白（セーフエリア） */}
               <div className="h-6" />
             </div>
-          </div>
         </div>
-      )}
-    </div>
+      </>
+    )}
+    </>
   );
 }
