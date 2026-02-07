@@ -399,6 +399,14 @@ export default function WeeklyCareMatrixPage() {
   const [memoInput, setMemoInput] = useState("");
   const [refetchCount, setRefetchCount] = useState(0);
 
+  // ── 既存レコードID（編集/削除用） ──
+  const [existingHealthLogId, setExistingHealthLogId] = useState<string | null>(null);
+  const [existingFeedingIds, setExistingFeedingIds] = useState<string[]>([]);
+  const [existingShedId, setExistingShedId] = useState<string | null>(null);
+  const [existingMeasurementId, setExistingMeasurementId] = useState<string | null>(null);
+  const [existingCareLogIds, setExistingCareLogIds] = useState<Record<string, string>>({});
+  const [modalLoading, setModalLoading] = useState(false);
+
   const weekDates = getWeekDates(weekOffset);
   const todayString = getTodayString();
 
@@ -422,52 +430,82 @@ export default function WeeklyCareMatrixPage() {
     setLengthInput("");
     setToggleCares({});
     setMemoInput("");
+    setExistingHealthLogId(null);
+    setExistingFeedingIds([]);
+    setExistingShedId(null);
+    setExistingMeasurementId(null);
+    setExistingCareLogIds({});
   }
 
-  function openModal(date: string) {
-    console.log("openModal called:", date);
+  async function openModal(date: string) {
     resetAllInputs();
     setModalDate(date);
+    setModalOpen(true);
+    if (!selectedId) return;
 
-    // 既存データで初期化
-    const dayEvents = events.filter((e) => e.date === date);
+    setModalLoading(true);
+    const supabase = createClient();
 
-    const condEvent = dayEvents.find((e) => e.type === "condition");
-    if (condEvent?.condition) setConditionInput(condEvent.condition);
+    const [healthRes, feedRes, careRes, shedRes, measRes] = await Promise.all([
+      supabase.from('health_logs').select('id, condition')
+        .eq('individual_id', selectedId).eq('logged_on', date).limit(1),
+      supabase.from('feedings').select('id, food_type, quantity, refused')
+        .eq('individual_id', selectedId)
+        .gte('fed_at', date + 'T00:00:00').lte('fed_at', date + 'T23:59:59'),
+      supabase.from('care_logs').select('id, care_type, value')
+        .eq('individual_id', selectedId).eq('logged_on', date),
+      supabase.from('sheds').select('id, completeness')
+        .eq('individual_id', selectedId).eq('shed_on', date).limit(1),
+      supabase.from('measurements').select('id, weight_g, length_cm')
+        .eq('individual_id', selectedId).eq('measured_on', date).limit(1),
+    ]);
 
-    const feeds = dayEvents.filter((e) => e.type === "feeding");
-    if (feeds.length > 0) {
-      setFeedingInputs(
-        feeds.map((f) => ({
-          foodType: f.foodType ?? "コオロギ",
-          quantity: 1,
-          dusting: f.dusting ?? false,
-          refused: false,
-        }))
-      );
+    // health_logs
+    if (healthRes.data?.[0]) {
+      setConditionInput(healthRes.data[0].condition);
+      setExistingHealthLogId(healthRes.data[0].id);
     }
 
-    const poopEvent = dayEvents.find((e) => e.type === "poop");
-    if (poopEvent) setPoopInput("普通");
+    // feedings
+    if (feedRes.data && feedRes.data.length > 0) {
+      setFeedingInputs(feedRes.data.map((f: any) => ({
+        foodType: f.food_type,
+        quantity: f.quantity ?? 1,
+        dusting: false,
+        refused: f.refused ?? false,
+      })));
+      setExistingFeedingIds(feedRes.data.map((f: any) => f.id));
+    }
 
-    const urineEvent = dayEvents.find((e) => e.type === "urine");
-    if (urineEvent) setUrineInput("普通");
-
-    const shedEvent = dayEvents.find((e) => e.type === "shedding");
-    if (shedEvent) setShedInput("完全");
-
-    const weightEvent = dayEvents.find((e) => e.type === "weight");
-    if (weightEvent?.weight_g) setWeightInput(String(weightEvent.weight_g));
-
+    // care_logs
+    const careIdMap: Record<string, string> = {};
     const toggleMap: Record<string, boolean> = {};
-    CARE_TOGGLE_ITEMS.forEach((item) => {
-      if (dayEvents.some((e) => e.type === item.key)) {
-        toggleMap[item.key] = true;
+    if (careRes.data) {
+      for (const c of careRes.data) {
+        careIdMap[c.care_type] = c.id;
+        if (c.care_type === 'poop') setPoopInput(c.value);
+        else if (c.care_type === 'urine') setUrineInput(c.value);
+        else if (c.care_type === 'memo') { setMemoInput(c.value ?? ''); toggleMap['memo'] = true; }
+        else toggleMap[c.care_type] = true;
       }
-    });
+    }
+    setExistingCareLogIds(careIdMap);
     setToggleCares(toggleMap);
 
-    setModalOpen(true);
+    // sheds
+    if (shedRes.data?.[0]) {
+      setShedInput(shedRes.data[0].completeness === '完全' ? '脱皮完了' : '不完全');
+      setExistingShedId(shedRes.data[0].id);
+    }
+
+    // measurements
+    if (measRes.data?.[0]) {
+      if (measRes.data[0].weight_g) setWeightInput(String(measRes.data[0].weight_g));
+      if (measRes.data[0].length_cm) setLengthInput(String(measRes.data[0].length_cm));
+      setExistingMeasurementId(measRes.data[0].id);
+    }
+
+    setModalLoading(false);
   }
 
   const handleSave = async () => {
@@ -477,118 +515,82 @@ export default function WeeklyCareMatrixPage() {
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error('Save error: not authenticated');
-        return;
-      }
+      if (!user) { console.error('Save error: not authenticated'); return; }
       const userId = user.id;
-      const promises: PromiseLike<any>[] = [];
+      const ops: PromiseLike<any>[] = [];
+
+      // ── helper: upsert / delete ──
+      const upsertOrDelete = (
+        table: string,
+        existingId: string | null,
+        hasValue: boolean,
+        insertData: Record<string, any>,
+        updateData: Record<string, any>,
+      ) => {
+        if (hasValue && existingId) {
+          ops.push(supabase.from(table).update(updateData).eq('id', existingId).select().then(r => r));
+        } else if (hasValue && !existingId) {
+          ops.push(supabase.from(table).insert(insertData).select().then(r => r));
+        } else if (!hasValue && existingId) {
+          ops.push(supabase.from(table).delete().eq('id', existingId).then(r => r));
+        }
+      };
 
       // 1. 調子 → health_logs
-      if (conditionInput) {
-        promises.push(
-          supabase.from('health_logs').insert({
-            user_id: userId,
-            individual_id: selectedId,
-            logged_on: modalDate,
-            condition: conditionInput,
-            symptoms: [],
-          }).select().then(r => r)
-        );
-      }
+      upsertOrDelete('health_logs', existingHealthLogId, !!conditionInput,
+        { user_id: userId, individual_id: selectedId, logged_on: modalDate, condition: conditionInput, symptoms: [] },
+        { condition: conditionInput },
+      );
 
-      // 2. 給餌 → feedings（複数行）
+      // 2. 給餌 → feedings（既存を全削除して新規insert）
+      for (const oldId of existingFeedingIds) {
+        ops.push(supabase.from('feedings').delete().eq('id', oldId).then(r => r));
+      }
       for (const fi of feedingInputs) {
-        promises.push(
-          supabase.from('feedings').insert({
-            user_id: userId,
-            individual_id: selectedId,
-            fed_at: modalDate + 'T12:00:00',
-            food_type: fi.foodType,
-            quantity: fi.quantity,
-            refused: fi.refused,
-          }).select().then(r => r)
-        );
+        ops.push(supabase.from('feedings').insert({
+          user_id: userId, individual_id: selectedId,
+          fed_at: modalDate + 'T12:00:00',
+          food_type: fi.foodType, quantity: fi.quantity, refused: fi.refused,
+        }).select().then(r => r));
       }
 
       // 3. 脱皮 → sheds
-      if (shedInput) {
-        promises.push(
-          supabase.from('sheds').insert({
-            user_id: userId,
-            individual_id: selectedId,
-            shed_on: modalDate,
-            completeness: shedInput === '脱皮' ? '完全' : '不完全',
-          }).select().then(r => r)
-        );
-      }
+      const shedComp = shedInput === '脱皮完了' ? '完全' : shedInput === '不完全' ? '不完全' : '完全';
+      upsertOrDelete('sheds', existingShedId, !!shedInput,
+        { user_id: userId, individual_id: selectedId, shed_on: modalDate, completeness: shedComp },
+        { completeness: shedComp },
+      );
 
       // 4. 体重 → measurements
-      if (weightInput && parseFloat(weightInput) > 0) {
-        promises.push(
-          supabase.from('measurements').insert({
-            user_id: userId,
-            individual_id: selectedId,
-            measured_on: modalDate,
-            weight_g: parseFloat(weightInput),
-            length_cm: lengthInput ? parseFloat(lengthInput) : null,
-          }).select().then(r => r)
+      const hasWeight = !!(weightInput && parseFloat(weightInput) > 0);
+      upsertOrDelete('measurements', existingMeasurementId, hasWeight,
+        { user_id: userId, individual_id: selectedId, measured_on: modalDate,
+          weight_g: hasWeight ? parseFloat(weightInput) : null,
+          length_cm: lengthInput ? parseFloat(lengthInput) : null },
+        { weight_g: hasWeight ? parseFloat(weightInput) : null,
+          length_cm: lengthInput ? parseFloat(lengthInput) : null },
+      );
+
+      // 5. care_logs: フン・尿・トグル系ケア・メモ
+      const careTypes = ['poop', 'urine', ...CARE_TOGGLE_ITEMS.map(i => i.key), 'memo'];
+      for (const ct of careTypes) {
+        let hasValue = false;
+        let value: string | null = null;
+        if (ct === 'poop') { hasValue = !!poopInput; value = poopInput; }
+        else if (ct === 'urine') { hasValue = !!urineInput; value = urineInput; }
+        else if (ct === 'memo') { hasValue = !!memoInput; value = memoInput; }
+        else { hasValue = !!toggleCares[ct]; }
+
+        upsertOrDelete('care_logs', existingCareLogIds[ct] ?? null, hasValue,
+          { user_id: userId, individual_id: selectedId, logged_on: modalDate, care_type: ct, value },
+          { value },
         );
       }
 
-      // 5. care_logs: フン・尿・トグル系ケア・メモ
-      // care_type: poop, urine, cleaning, bathing, handling, water_change, medication, hospital, mating, egg_laying, memo, photo
-      if (poopInput) {
-        const payload = { user_id: userId, individual_id: selectedId, logged_on: modalDate, care_type: 'poop', value: poopInput };
-        console.log('care_logs payload:', JSON.stringify(payload));
-        promises.push(supabase.from('care_logs').insert(payload).select().then(r => {
-          if (r.error) console.error('care_logs insert error:', r.error.message, r.error.details);
-          return r;
-        }));
-      }
-      if (urineInput) {
-        const payload = { user_id: userId, individual_id: selectedId, logged_on: modalDate, care_type: 'urine', value: urineInput };
-        console.log('care_logs payload:', JSON.stringify(payload));
-        promises.push(supabase.from('care_logs').insert(payload).select().then(r => {
-          if (r.error) console.error('care_logs insert error:', r.error.message, r.error.details);
-          return r;
-        }));
-      }
-      for (const [careType, isOn] of Object.entries(toggleCares)) {
-        if (!isOn) continue;
-        const payload = {
-          user_id: userId,
-          individual_id: selectedId,
-          logged_on: modalDate,
-          care_type: careType,
-          value: careType === 'memo' ? memoInput : null,
-        };
-        console.log('care_logs payload:', JSON.stringify(payload));
-        promises.push(supabase.from('care_logs').insert(payload).select().then(r => {
-          if (r.error) console.error('care_logs insert error:', r.error.message, r.error.details);
-          return r;
-        }));
-      }
-      // メモ（トグルに含まれていなくてもテキストがあれば保存）
-      if (memoInput && !toggleCares['memo']) {
-        const payload = { user_id: userId, individual_id: selectedId, logged_on: modalDate, care_type: 'memo', value: memoInput };
-        console.log('care_logs payload:', JSON.stringify(payload));
-        promises.push(supabase.from('care_logs').insert(payload).select().then(r => {
-          if (r.error) console.error('care_logs insert error:', r.error.message, r.error.details);
-          return r;
-        }));
-      }
+      const results = await Promise.all(ops);
+      const errors = results.filter(r => r?.error);
+      if (errors.length > 0) console.error('Save errors:', errors.map(e => e.error));
 
-      const results = await Promise.all(promises);
-      console.log('Save results:', results.map(r => ({ data: r.data, error: r.error, status: r.status })));
-
-      // エラーチェック
-      const errors = results.filter(r => r.error);
-      if (errors.length > 0) {
-        console.error('Save errors:', errors.map(e => e.error));
-      }
-
-      // モーダルを閉じてデータ再取得
       setModalOpen(false);
       resetAllInputs();
       setRefetchCount(c => c + 1);
