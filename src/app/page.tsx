@@ -425,6 +425,7 @@ export default function WeeklyCareMatrixPage() {
   }
 
   function openModal(date: string) {
+    console.log("openModal called:", date);
     resetAllInputs();
     setModalDate(date);
 
@@ -780,10 +781,12 @@ export default function WeeklyCareMatrixPage() {
                           return (
                             <td
                               key={date}
-                              onClick={() => openModal(date)}
-                              className={`py-2 px-1 text-center border border-gray-200 cursor-pointer active:bg-gray-100 ${isToday ? "bg-blue-50/40" : ""}`}
+                              className={`py-2 px-1 text-center border border-gray-200 ${isToday ? "bg-blue-50/40" : ""}`}
                             >
-                              <div className="w-full h-10 flex items-center justify-center">
+                              <div
+                                onClick={() => openModal(date)}
+                                className="w-full h-10 flex items-center justify-center cursor-pointer hover:bg-gray-50 rounded transition-colors"
+                              >
                                 {renderCellContent(care, dayEvents)}
                               </div>
                             </td>
@@ -822,7 +825,7 @@ export default function WeeklyCareMatrixPage() {
                         <div
                           key={di}
                           onClick={() => openModal(date)}
-                          className={`border border-gray-200 min-h-[88px] p-1 cursor-pointer active:bg-gray-100 ${isToday ? "bg-blue-50/40" : ""}`}
+                          className={`border border-gray-200 min-h-[88px] p-1 cursor-pointer hover:bg-gray-50 transition-colors ${isToday ? "bg-blue-50/40" : ""}`}
                         >
                           <div className="flex justify-end mb-0.5">
                             {isToday ? (
