@@ -134,6 +134,29 @@ export interface Memo {
   updated_at: string;
 }
 
+/** ケアログ種別 (care_logs テーブル用) */
+export type CareLogType =
+  | 'poop'
+  | 'urine'
+  | 'cleaning'
+  | 'bathing'
+  | 'handling'
+  | 'water_change'
+  | 'medication'
+  | 'hospital'
+  | 'mating'
+  | 'egg_laying';
+
+export interface CareLog {
+  id: string;
+  user_id: string;
+  individual_id: string;
+  log_type: CareLogType;
+  logged_on: string;
+  notes: string;
+  created_at: string;
+}
+
 // -----------------------------------------------
 // 遺伝子関連
 // -----------------------------------------------
@@ -200,6 +223,12 @@ export interface Database {
         Row: Memo;
         Insert: Omit<Memo, 'id' | 'created_at' | 'updated_at'> & { id?: never; created_at?: string; updated_at?: string };
         Update: Partial<Omit<Memo, 'id'>>;
+        Relationships: [];
+      };
+      care_logs: {
+        Row: CareLog;
+        Insert: Omit<CareLog, 'id' | 'created_at'> & { id?: never; created_at?: string };
+        Update: Partial<Omit<CareLog, 'id'>>;
         Relationships: [];
       };
     };

@@ -1,12 +1,42 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Sparkles, Weight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  HeartPulse,
+  Circle,
+  Droplets,
+  Paintbrush,
+  Waves,
+  Grab,
+  GlassWater,
+  Pill,
+  Stethoscope,
+  HeartHandshake,
+  Egg,
+  Sparkles,
+  Weight,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 // ── 型定義 ──────────────────────────────────────────────
 
-type CareType = "feeding" | "shedding" | "weight";
+type CareType =
+  | "condition"
+  | "feeding"
+  | "poop"
+  | "urine"
+  | "cleaning"
+  | "bathing"
+  | "handling"
+  | "water_change"
+  | "medication"
+  | "hospital"
+  | "mating"
+  | "egg_laying"
+  | "shedding"
+  | "weight";
 
 interface CareItem {
   type: CareType;
@@ -26,24 +56,27 @@ interface CareEvent {
   date: string; // "YYYY-MM-DD"
   foodType?: string;
   dusting?: boolean;
-}
-
-interface FeedingInput {
-  foodType: string;
-  quantity: number;
-  dusting: boolean;
-}
-
-interface ShedInput {
-  completeness: "完全" | "不完全";
+  condition?: string;
+  weight_g?: number;
 }
 
 // ── 定数 ──────────────────────────────────────────────
 
 const CARE_ITEMS: CareItem[] = [
-  { type: "feeding",  label: "給餌",     icon: () => null, color: "text-amber-600" },
-  { type: "shedding", label: "脱皮",     icon: Sparkles,   color: "text-purple-500" },
-  { type: "weight",   label: "体重計測", icon: Weight,      color: "text-emerald-500" },
+  { type: "condition",    label: "体調",       icon: HeartPulse,     color: "text-rose-500" },
+  { type: "feeding",      label: "給餌",       icon: () => null,     color: "text-amber-600" },
+  { type: "poop",         label: "排泄",       icon: Circle,         color: "text-amber-800" },
+  { type: "urine",        label: "尿",         icon: Droplets,       color: "text-yellow-500" },
+  { type: "cleaning",     label: "掃除",       icon: Paintbrush,     color: "text-sky-500" },
+  { type: "bathing",      label: "温浴",       icon: Waves,          color: "text-cyan-500" },
+  { type: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Grab,           color: "text-orange-500" },
+  { type: "water_change", label: "水替え",     icon: GlassWater,     color: "text-blue-500" },
+  { type: "medication",   label: "投薬",       icon: Pill,           color: "text-red-500" },
+  { type: "hospital",     label: "通院",       icon: Stethoscope,    color: "text-red-600" },
+  { type: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500" },
+  { type: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-amber-500" },
+  { type: "shedding",     label: "脱皮",       icon: Sparkles,       color: "text-purple-500" },
+  { type: "weight",       label: "体重",       icon: Weight,         color: "text-emerald-500" },
 ];
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -57,6 +90,12 @@ const FOOD_ICONS: Record<string, { symbol: string; color: string }> = {
   "卵":           { symbol: "卵", color: "text-amber-400" },
   "人工フード":   { symbol: "人", color: "text-blue-600" },
   "その他":       { symbol: "他", color: "text-gray-500" },
+};
+
+const CONDITION_COLORS: Record<string, string> = {
+  "絶好調": "text-emerald-500",
+  "普通":   "text-gray-400",
+  "不調":   "text-red-500",
 };
 
 // ── ユーティリティ関数 ─────────────────────────────────
@@ -108,9 +147,53 @@ function getISOWeekNumber(date: Date): number {
   return 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
 }
 
-function formatModalDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, "0")}月${String(d.getDate()).padStart(2, "0")}日(${WEEKDAYS[d.getDay()]})`;
+// ── セル描画 ──────────────────────────────────────────
+
+function renderCellContent(care: CareItem, dayEvents: CareEvent[]) {
+  if (dayEvents.length === 0) return null;
+
+  const Icon = care.icon;
+
+  switch (care.type) {
+    case "feeding":
+      return (
+        <div className="flex items-center justify-center gap-0.5 flex-wrap">
+          {dayEvents.map((f, i) => {
+            const foodIcon = FOOD_ICONS[f.foodType ?? ""] ?? {
+              symbol: "?",
+              color: "text-gray-400",
+            };
+            return (
+              <div key={i} className="relative">
+                <span className={`text-[11px] font-bold ${foodIcon.color}`}>
+                  {foodIcon.symbol}
+                </span>
+                {f.dusting && (
+                  <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
+
+    case "condition": {
+      const cond = dayEvents[0].condition ?? "普通";
+      const condColor = CONDITION_COLORS[cond] ?? "text-gray-400";
+      return <HeartPulse className={`w-3.5 h-3.5 ${condColor}`} />;
+    }
+
+    case "weight": {
+      const w = dayEvents[0].weight_g;
+      if (w != null && w > 0) {
+        return <span className="text-[10px] font-bold text-emerald-600">{w}</span>;
+      }
+      return <Icon className={`w-3.5 h-3.5 ${care.color}`} />;
+    }
+
+    default:
+      return <Icon className={`w-3.5 h-3.5 ${care.color}`} />;
+  }
 }
 
 // ── ページコンポーネント ───────────────────────────────
@@ -121,15 +204,6 @@ export default function WeeklyCareMatrixPage() {
   const [weekOffset, setWeekOffset] = useState<number>(0);
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refetchCount, setRefetchCount] = useState(0);
-
-  // モーダル制御
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalDate, setModalDate] = useState<string>("");
-  const [feedingInputs, setFeedingInputs] = useState<FeedingInput[]>([]);
-  const [shedInput, setShedInput] = useState<ShedInput | null>(null);
-  const [weightInput, setWeightInput] = useState<string>("");
-  const [saving, setSaving] = useState(false);
 
   const weekDates = getWeekDates(weekOffset);
   const todayString = getTodayString();
@@ -167,7 +241,7 @@ export default function WeeklyCareMatrixPage() {
       });
   }, []);
 
-  // Effect 2: ケア記録の取得（selectedId or weekOffset or refetchCount 変更時）
+  // Effect 2: ケア記録の取得（selectedId or weekOffset 変更時）
   useEffect(() => {
     if (!selectedId) return;
 
@@ -176,28 +250,47 @@ export default function WeeklyCareMatrixPage() {
     const endDate = weekDates[6];
 
     Promise.all([
+      // feedings
       supabase
         .from("feedings")
         .select("id, fed_at, food_type, dusting")
         .eq("individual_id", selectedId)
         .gte("fed_at", startDate + "T00:00:00")
         .lte("fed_at", endDate + "T23:59:59"),
+      // sheds
       supabase
         .from("sheds")
         .select("id, shed_on")
         .eq("individual_id", selectedId)
         .gte("shed_on", startDate)
         .lte("shed_on", endDate),
+      // measurements
       supabase
         .from("measurements")
-        .select("id, measured_on")
+        .select("id, measured_on, weight_g")
         .eq("individual_id", selectedId)
         .gte("measured_on", startDate)
         .lte("measured_on", endDate),
-    ]).then(([feedRes, shedRes, measRes]) => {
+      // health_logs
+      supabase
+        .from("health_logs")
+        .select("id, logged_on, condition")
+        .eq("individual_id", selectedId)
+        .gte("logged_on", startDate)
+        .lte("logged_on", endDate),
+      // care_logs
+      supabase
+        .from("care_logs")
+        .select("id, log_type, logged_on")
+        .eq("individual_id", selectedId)
+        .gte("logged_on", startDate)
+        .lte("logged_on", endDate),
+    ]).then(([feedRes, shedRes, measRes, healthRes, careRes]) => {
       if (feedRes.error) console.error("Failed to fetch feedings:", feedRes.error);
       if (shedRes.error) console.error("Failed to fetch sheds:", shedRes.error);
       if (measRes.error) console.error("Failed to fetch measurements:", measRes.error);
+      if (healthRes.error) console.error("Failed to fetch health_logs:", healthRes.error);
+      if (careRes.error) console.error("Failed to fetch care_logs:", careRes.error);
 
       const feedEvents: CareEvent[] = (feedRes.data ?? []).map((f) => ({
         type: "feeding" as CareType,
@@ -205,93 +298,39 @@ export default function WeeklyCareMatrixPage() {
         foodType: f.food_type,
         dusting: f.dusting,
       }));
+
       const shedEvents: CareEvent[] = (shedRes.data ?? []).map((s) => ({
         type: "shedding" as CareType,
         date: s.shed_on.slice(0, 10),
       }));
+
       const measEvents: CareEvent[] = (measRes.data ?? []).map((m) => ({
         type: "weight" as CareType,
         date: m.measured_on.slice(0, 10),
+        weight_g: m.weight_g,
       }));
 
-      setEvents([...feedEvents, ...shedEvents, ...measEvents]);
+      const healthEvents: CareEvent[] = (healthRes.data ?? []).map((h) => ({
+        type: "condition" as CareType,
+        date: h.logged_on.slice(0, 10),
+        condition: h.condition,
+      }));
+
+      const careLogEvents: CareEvent[] = (careRes.data ?? []).map((c) => ({
+        type: c.log_type as CareType,
+        date: c.logged_on.slice(0, 10),
+      }));
+
+      setEvents([
+        ...feedEvents,
+        ...shedEvents,
+        ...measEvents,
+        ...healthEvents,
+        ...careLogEvents,
+      ]);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, weekOffset, refetchCount]);
-
-  // ── セルタップ ──
-
-  const handleCellTap = (date: string) => {
-    setModalDate(date);
-    const dayFeedings = events.filter((e) => e.type === "feeding" && e.date === date);
-    setFeedingInputs(
-      dayFeedings.length > 0
-        ? dayFeedings.map((f) => ({ foodType: f.foodType ?? "コオロギ", quantity: 1, dusting: f.dusting ?? false }))
-        : []
-    );
-    setShedInput(null);
-    setWeightInput("");
-    setModalOpen(true);
-  };
-
-  // ── 保存処理 ──
-
-  const handleSave = async () => {
-    if (!selectedId || !modalDate) return;
-    setSaving(true);
-
-    try {
-      const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const promises: PromiseLike<any>[] = [];
-
-      for (const fi of feedingInputs) {
-        promises.push(
-          supabase.from("feedings").insert({
-            individual_id: selectedId,
-            fed_at: modalDate + "T12:00:00",
-            food_type: fi.foodType,
-            quantity: fi.quantity,
-            dusting: fi.dusting,
-            refused: false,
-            notes: "",
-          })
-        );
-      }
-
-      if (shedInput) {
-        promises.push(
-          supabase.from("sheds").insert({
-            individual_id: selectedId,
-            shed_on: modalDate,
-            completeness: shedInput.completeness,
-            notes: "",
-          })
-        );
-      }
-
-      if (weightInput && parseFloat(weightInput) > 0) {
-        promises.push(
-          supabase.from("measurements").insert({
-            individual_id: selectedId,
-            measured_on: modalDate,
-            weight_g: parseFloat(weightInput),
-            notes: "",
-          })
-        );
-      }
-
-      await Promise.all(promises);
-      setModalOpen(false);
-      setRefetchCount((c) => c + 1);
-    } catch (error) {
-      console.error("Save error:", error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const hasModalInput = feedingInputs.length > 0 || shedInput !== null || weightInput !== "";
+  }, [selectedId, weekOffset]);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -340,9 +379,9 @@ export default function WeeklyCareMatrixPage() {
 
         {/* C. マトリクスカード */}
         {loading ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-2">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="h-8 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : individuals.length === 0 ? (
@@ -435,7 +474,7 @@ export default function WeeklyCareMatrixPage() {
                         </td>
                         {weekDates.map((date) => {
                           const isToday = date === todayString;
-                          const hasRecord = events.some(
+                          const dayEvents = events.filter(
                             (e) => e.type === care.type && e.date === date
                           );
                           return (
@@ -443,40 +482,8 @@ export default function WeeklyCareMatrixPage() {
                               key={date}
                               className={`p-0.5 text-center ${isToday ? "bg-blue-50/40" : ""}`}
                             >
-                              <div
-                                onClick={() => handleCellTap(date)}
-                                className="w-full h-9 flex items-center justify-center cursor-pointer hover:bg-gray-50 rounded transition-colors"
-                              >
-                                {care.type === "feeding" ? (
-                                  (() => {
-                                    const dayFeedings = events.filter(
-                                      (e) => e.type === "feeding" && e.date === date
-                                    );
-                                    if (dayFeedings.length === 0) return null;
-                                    return (
-                                      <div className="flex items-center justify-center gap-0.5 flex-wrap">
-                                        {dayFeedings.map((f, i) => {
-                                          const foodIcon = FOOD_ICONS[f.foodType ?? ""] ?? {
-                                            symbol: "?",
-                                            color: "text-gray-400",
-                                          };
-                                          return (
-                                            <div key={i} className="relative">
-                                              <span className={`text-[11px] font-bold ${foodIcon.color}`}>
-                                                {foodIcon.symbol}
-                                              </span>
-                                              {f.dusting && (
-                                                <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                              )}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    );
-                                  })()
-                                ) : (
-                                  hasRecord && <Icon className={`w-4 h-4 ${care.color}`} />
-                                )}
+                              <div className="w-full h-8 flex items-center justify-center">
+                                {renderCellContent(care, dayEvents)}
                               </div>
                             </td>
                           );
@@ -505,205 +512,6 @@ export default function WeeklyCareMatrixPage() {
           </div>
         )}
       </div>
-
-      {/* ── 記録入力モーダル（ボトムシート） ── */}
-      {modalOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setModalOpen(false)}
-          />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-xl animate-slide-up">
-            {/* ハンドルバー */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
-            </div>
-
-            {/* ヘッダー */}
-            <div className="flex items-center justify-between px-4 pb-3 border-b border-gray-100">
-              <h2 className="text-base font-bold text-gray-900">
-                {formatModalDate(modalDate)}
-              </h2>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-sm text-gray-400 hover:text-gray-600"
-              >
-                キャンセル
-              </button>
-            </div>
-
-            {/* コンテンツ */}
-            <div className="px-4 py-4 space-y-6">
-              {/* === 給餌セクション === */}
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-800">給餌</h3>
-                  <button
-                    onClick={() => setFeedingInputs([])}
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    リセット
-                  </button>
-                </div>
-
-                {feedingInputs.map((fi, index) => (
-                  <div key={index} className="mb-3 p-3 bg-gray-50 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">給餌{index + 1}</span>
-                      <button
-                        onClick={() => setFeedingInputs((prev) => prev.filter((_, i) => i !== index))}
-                        className="text-xs text-red-400 hover:text-red-600"
-                      >
-                        削除
-                      </button>
-                    </div>
-
-                    {/* 餌タイプ選択 */}
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {Object.entries(FOOD_ICONS).map(([name, f]) => (
-                        <button
-                          key={name}
-                          onClick={() => {
-                            const updated = [...feedingInputs];
-                            updated[index] = { ...updated[index], foodType: name };
-                            setFeedingInputs(updated);
-                          }}
-                          className={`py-1.5 rounded-lg text-xs font-medium transition-colors
-                            ${fi.foodType === name
-                              ? "bg-blue-100 text-blue-700 ring-1 ring-blue-300"
-                              : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400"}`}
-                        >
-                          <span className={`text-sm font-bold ${f.color}`}>{f.symbol}</span>
-                          <div className="text-[9px] text-gray-400 mt-0.5">{name}</div>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* 数量 + ダスティング */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">数量</span>
-                        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                          <button
-                            onClick={() => {
-                              const updated = [...feedingInputs];
-                              updated[index] = { ...updated[index], quantity: Math.max(1, fi.quantity - 1) };
-                              setFeedingInputs(updated);
-                            }}
-                            className="px-2 py-1 text-gray-500 hover:bg-gray-50"
-                          >
-                            −
-                          </button>
-                          <span className="px-3 py-1 text-sm font-medium text-gray-800 min-w-[2rem] text-center">
-                            {fi.quantity}
-                          </span>
-                          <button
-                            onClick={() => {
-                              const updated = [...feedingInputs];
-                              updated[index] = { ...updated[index], quantity: fi.quantity + 1 };
-                              setFeedingInputs(updated);
-                            }}
-                            className="px-2 py-1 text-gray-500 hover:bg-gray-50"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          const updated = [...feedingInputs];
-                          updated[index] = { ...updated[index], dusting: !fi.dusting };
-                          setFeedingInputs(updated);
-                        }}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
-                          ${fi.dusting
-                            ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300"
-                            : "bg-white text-gray-400 border border-gray-200"}`}
-                      >
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        Ca+
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                <button
-                  onClick={() => setFeedingInputs((prev) => [...prev, { foodType: "コオロギ", quantity: 1, dusting: false }])}
-                  className="w-full py-2 border border-dashed border-gray-300 rounded-xl text-sm text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors"
-                >
-                  ＋ 給餌を追加
-                </button>
-              </section>
-
-              {/* === 脱皮セクション === */}
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-800">脱皮</h3>
-                  <button
-                    onClick={() => setShedInput(null)}
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    リセット
-                  </button>
-                </div>
-                <div className="flex gap-2">
-                  {(["完全", "不完全"] as const).map((comp) => (
-                    <button
-                      key={comp}
-                      onClick={() => setShedInput(shedInput?.completeness === comp ? null : { completeness: comp })}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors
-                        ${shedInput?.completeness === comp
-                          ? "bg-purple-100 text-purple-700 ring-1 ring-purple-300"
-                          : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400"}`}
-                    >
-                      {comp}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              {/* === 体重計測セクション === */}
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-800">体重計測</h3>
-                  <button
-                    onClick={() => setWeightInput("")}
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    リセット
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="0.0"
-                    value={weightInput}
-                    onChange={(e) => setWeightInput(e.target.value)}
-                    className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-                  />
-                  <span className="text-sm text-gray-500 font-medium">g</span>
-                </div>
-              </section>
-            </div>
-
-            {/* 保存ボタン */}
-            <div className="sticky bottom-0 px-4 py-3 bg-white border-t border-gray-100">
-              <button
-                onClick={handleSave}
-                disabled={saving || !hasModalInput}
-                className={`w-full py-3 rounded-xl text-sm font-bold transition-colors
-                  ${saving || !hasModalInput
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"}`}
-              >
-                {saving ? "保存中..." : "登録"}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
