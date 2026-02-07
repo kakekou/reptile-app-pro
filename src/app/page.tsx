@@ -26,6 +26,9 @@ import {
   Bird,
   FlaskConical,
   Plus,
+  X,
+  Minus,
+  Check,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -71,6 +74,13 @@ interface CareEvent {
   weight_g?: number;
 }
 
+interface FeedingInput {
+  foodType: string;
+  quantity: number;
+  dusting: boolean;
+  refused: boolean;
+}
+
 // ── 定数 ──────────────────────────────────────────────
 
 const CARE_ITEMS: CareItem[] = [
@@ -110,6 +120,36 @@ const CONDITION_COLORS: Record<string, string> = {
   "普通":   "text-gray-400",
   "不調":   "text-red-500",
 };
+
+const CONDITION_LEVELS = [
+  { label: "絶好調", emoji: "😆" },
+  { label: "好調",   emoji: "😊" },
+  { label: "普通",   emoji: "😐" },
+  { label: "不調",   emoji: "😞" },
+  { label: "絶不調", emoji: "😵" },
+];
+
+const FOOD_OPTIONS = [
+  { key: "コオロギ",     icon: Bug,          color: "text-amber-700",  bg: "bg-amber-50" },
+  { key: "デュビア",     icon: Locate,       color: "text-red-700",    bg: "bg-red-50" },
+  { key: "ミルワーム",   icon: Worm,         color: "text-yellow-600", bg: "bg-yellow-50" },
+  { key: "ピンクマウス", icon: Mouse,        color: "text-pink-500",   bg: "bg-pink-50" },
+  { key: "ヒヨコ",       icon: Bird,         color: "text-orange-400", bg: "bg-orange-50" },
+  { key: "卵",           icon: Egg,          color: "text-amber-400",  bg: "bg-amber-50" },
+  { key: "人工フード",   icon: FlaskConical, color: "text-blue-600",   bg: "bg-blue-50" },
+  { key: "その他",       icon: Plus,         color: "text-gray-500",   bg: "bg-gray-50" },
+];
+
+const CARE_TOGGLE_ITEMS = [
+  { key: "cleaning",     label: "掃除",       icon: Paintbrush,     color: "text-sky-500",    bg: "bg-sky-50" },
+  { key: "bathing",      label: "温浴",       icon: Waves,          color: "text-cyan-500",   bg: "bg-cyan-50" },
+  { key: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Grab,           color: "text-orange-500", bg: "bg-orange-50" },
+  { key: "water_change", label: "水替え",     icon: GlassWater,     color: "text-blue-500",   bg: "bg-blue-50" },
+  { key: "medication",   label: "投薬",       icon: Pill,           color: "text-red-500",    bg: "bg-red-50" },
+  { key: "hospital",     label: "通院",       icon: Stethoscope,    color: "text-red-600",    bg: "bg-red-50" },
+  { key: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",   bg: "bg-pink-50" },
+  { key: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-amber-500",  bg: "bg-amber-50" },
+];
 
 // ── ユーティリティ関数 ─────────────────────────────────
 
@@ -205,6 +245,12 @@ function getMonthCalendarDates(monthOffset: number): (string | null)[][] {
   }
 
   return weeks;
+}
+
+function formatModalDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return `${m}月${d}日(${WEEKDAYS[date.getDay()]})`;
 }
 
 // ── イベント正規化（共通） ──────────────────────────────
@@ -339,6 +385,20 @@ export default function WeeklyCareMatrixPage() {
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ── モーダル用ステート ──
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalDate, setModalDate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [conditionInput, setConditionInput] = useState<string | null>(null);
+  const [feedingInputs, setFeedingInputs] = useState<FeedingInput[]>([]);
+  const [poopInput, setPoopInput] = useState<string | null>(null);
+  const [urineInput, setUrineInput] = useState<string | null>(null);
+  const [shedInput, setShedInput] = useState<string | null>(null);
+  const [weightInput, setWeightInput] = useState("");
+  const [lengthInput, setLengthInput] = useState("");
+  const [toggleCares, setToggleCares] = useState<Record<string, boolean>>({});
+  const [memoInput, setMemoInput] = useState("");
+
   const weekDates = getWeekDates(weekOffset);
   const todayString = getTodayString();
 
@@ -350,6 +410,85 @@ export default function WeeklyCareMatrixPage() {
 
   const { year: displayYear, month: displayMonth } = getMonthRange(monthOffset);
   const monthCalendarDates = getMonthCalendarDates(monthOffset);
+
+  // ── モーダル関数 ──
+  function resetAllInputs() {
+    setConditionInput(null);
+    setFeedingInputs([]);
+    setPoopInput(null);
+    setUrineInput(null);
+    setShedInput(null);
+    setWeightInput("");
+    setLengthInput("");
+    setToggleCares({});
+    setMemoInput("");
+  }
+
+  function openModal(date: string) {
+    resetAllInputs();
+    setModalDate(date);
+
+    // 既存データで初期化
+    const dayEvents = events.filter((e) => e.date === date);
+
+    const condEvent = dayEvents.find((e) => e.type === "condition");
+    if (condEvent?.condition) setConditionInput(condEvent.condition);
+
+    const feeds = dayEvents.filter((e) => e.type === "feeding");
+    if (feeds.length > 0) {
+      setFeedingInputs(
+        feeds.map((f) => ({
+          foodType: f.foodType ?? "コオロギ",
+          quantity: 1,
+          dusting: f.dusting ?? false,
+          refused: false,
+        }))
+      );
+    }
+
+    const poopEvent = dayEvents.find((e) => e.type === "poop");
+    if (poopEvent) setPoopInput("普通");
+
+    const urineEvent = dayEvents.find((e) => e.type === "urine");
+    if (urineEvent) setUrineInput("普通");
+
+    const shedEvent = dayEvents.find((e) => e.type === "shedding");
+    if (shedEvent) setShedInput("完全");
+
+    const weightEvent = dayEvents.find((e) => e.type === "weight");
+    if (weightEvent?.weight_g) setWeightInput(String(weightEvent.weight_g));
+
+    const toggleMap: Record<string, boolean> = {};
+    CARE_TOGGLE_ITEMS.forEach((item) => {
+      if (dayEvents.some((e) => e.type === item.key)) {
+        toggleMap[item.key] = true;
+      }
+    });
+    setToggleCares(toggleMap);
+
+    setModalOpen(true);
+  }
+
+  async function handleSave() {
+    // Part C で実装
+    console.log("handleSave", {
+      date: modalDate,
+      condition: conditionInput,
+      feedings: feedingInputs,
+      poop: poopInput,
+      urine: urineInput,
+      shed: shedInput,
+      weight: weightInput,
+      length: lengthInput,
+      toggleCares,
+      memo: memoInput,
+    });
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      setModalOpen(false);
+    }, 300);
+  }
 
   // Effect 1: 個体一覧の取得（マウント時1回）
   useEffect(() => {
@@ -641,7 +780,8 @@ export default function WeeklyCareMatrixPage() {
                           return (
                             <td
                               key={date}
-                              className={`py-2 px-1 text-center border border-gray-200 ${isToday ? "bg-blue-50/40" : ""}`}
+                              onClick={() => openModal(date)}
+                              className={`py-2 px-1 text-center border border-gray-200 cursor-pointer active:bg-gray-100 ${isToday ? "bg-blue-50/40" : ""}`}
                             >
                               <div className="w-full h-10 flex items-center justify-center">
                                 {renderCellContent(care, dayEvents)}
@@ -681,7 +821,8 @@ export default function WeeklyCareMatrixPage() {
                       return (
                         <div
                           key={di}
-                          className={`border border-gray-200 min-h-[88px] p-1 ${isToday ? "bg-blue-50/40" : ""}`}
+                          onClick={() => openModal(date)}
+                          className={`border border-gray-200 min-h-[88px] p-1 cursor-pointer active:bg-gray-100 ${isToday ? "bg-blue-50/40" : ""}`}
                         >
                           <div className="flex justify-end mb-0.5">
                             {isToday ? (
@@ -712,6 +853,298 @@ export default function WeeklyCareMatrixPage() {
           </div>
         )}
       </div>
+
+      {/* ── モーダル（ボトムシート） ── */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          {/* 背景オーバーレイ */}
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setModalOpen(false)}
+          />
+
+          {/* シート本体 */}
+          <div className="relative w-full max-w-lg bg-white rounded-t-2xl animate-slide-up max-h-[85dvh] flex flex-col">
+            {/* ヘッダー */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
+              <button onClick={() => setModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+              <h2 className="text-base font-bold text-gray-900">
+                {formatModalDate(modalDate)}
+              </h2>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-full disabled:opacity-50"
+              >
+                {saving ? "保存中…" : "保存"}
+              </button>
+            </div>
+
+            {/* スクロールエリア */}
+            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-6">
+
+              {/* 1. 体調 */}
+              <section>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">体調</h3>
+                <div className="flex gap-2">
+                  {CONDITION_LEVELS.map((c) => (
+                    <button
+                      key={c.label}
+                      onClick={() => setConditionInput(conditionInput === c.label ? null : c.label)}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
+                        ${conditionInput === c.label
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white"
+                        }`}
+                    >
+                      <span className="text-xl">{c.emoji}</span>
+                      <span className="text-[10px] text-gray-500">{c.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* 2. 給餌 */}
+              <section>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">給餌</h3>
+
+                {/* 餌の種類アイコングリッド */}
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {FOOD_OPTIONS.map((food) => {
+                    const IconComp = food.icon;
+                    const isSelected = feedingInputs.some((f) => f.foodType === food.key);
+                    return (
+                      <button
+                        key={food.key}
+                        onClick={() => {
+                          if (isSelected) {
+                            setFeedingInputs((prev) => prev.filter((f) => f.foodType !== food.key));
+                          } else {
+                            setFeedingInputs((prev) => [
+                              ...prev,
+                              { foodType: food.key, quantity: 1, dusting: false, refused: false },
+                            ]);
+                          }
+                        }}
+                        className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
+                          ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                      >
+                        <IconComp className={`w-6 h-6 ${food.color}`} />
+                        <span className="text-[10px] text-gray-500">{food.key}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 選択済みの餌ごとの詳細 */}
+                {feedingInputs.map((fi, idx) => (
+                  <div key={fi.foodType} className="flex items-center gap-3 py-2 border-t border-gray-100">
+                    <span className="text-xs font-medium text-gray-600 w-20 truncate">{fi.foodType}</span>
+
+                    {/* 数量 */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setFeedingInputs((prev) =>
+                            prev.map((f, i) =>
+                              i === idx ? { ...f, quantity: Math.max(0, f.quantity - 1) } : f
+                            )
+                          );
+                        }}
+                        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-400"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-sm font-bold w-6 text-center">{fi.quantity}</span>
+                      <button
+                        onClick={() => {
+                          setFeedingInputs((prev) =>
+                            prev.map((f, i) =>
+                              i === idx ? { ...f, quantity: f.quantity + 1 } : f
+                            )
+                          );
+                        }}
+                        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-400"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* ダスティング */}
+                    <button
+                      onClick={() => {
+                        setFeedingInputs((prev) =>
+                          prev.map((f, i) =>
+                            i === idx ? { ...f, dusting: !f.dusting } : f
+                          )
+                        );
+                      }}
+                      className={`px-2 py-1 rounded-md text-[10px] font-medium border transition-colors
+                        ${fi.dusting ? "bg-emerald-50 border-emerald-400 text-emerald-700" : "border-gray-200 text-gray-400"}`}
+                    >
+                      Ca
+                    </button>
+
+                    {/* 拒食 */}
+                    <button
+                      onClick={() => {
+                        setFeedingInputs((prev) =>
+                          prev.map((f, i) =>
+                            i === idx ? { ...f, refused: !f.refused } : f
+                          )
+                        );
+                      }}
+                      className={`px-2 py-1 rounded-md text-[10px] font-medium border transition-colors
+                        ${fi.refused ? "bg-red-50 border-red-400 text-red-700" : "border-gray-200 text-gray-400"}`}
+                    >
+                      拒食
+                    </button>
+                  </div>
+                ))}
+              </section>
+
+              {/* 3. 排泄（うんち） */}
+              <section>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">排泄</h3>
+                <div className="flex gap-2">
+                  {[
+                    { label: "普通", emoji: "💩" },
+                    { label: "下痢", emoji: "💧" },
+                    { label: "なし", emoji: "❌" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setPoopInput(poopInput === opt.label ? null : opt.label)}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
+                        ${poopInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                    >
+                      <span className="text-lg">{opt.emoji}</span>
+                      <span className="text-[10px] text-gray-500">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* 4. 尿酸 */}
+              <section>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">尿酸</h3>
+                <div className="flex gap-2">
+                  {[
+                    { label: "白い", emoji: "⚪" },
+                    { label: "黄色", emoji: "🟡" },
+                    { label: "なし", emoji: "❌" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setUrineInput(urineInput === opt.label ? null : opt.label)}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
+                        ${urineInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                    >
+                      <span className="text-lg">{opt.emoji}</span>
+                      <span className="text-[10px] text-gray-500">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* 5. 脱皮 */}
+              <section>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">脱皮</h3>
+                <div className="flex gap-2">
+                  {[
+                    { label: "白濁",   emoji: "👁️" },
+                    { label: "脱皮完了", emoji: "✨" },
+                    { label: "不完全", emoji: "⚠️" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setShedInput(shedInput === opt.label ? null : opt.label)}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
+                        ${shedInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                    >
+                      <span className="text-lg">{opt.emoji}</span>
+                      <span className="text-[10px] text-gray-500">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* 6. 体重・体長 */}
+              <section>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">体重・体長</h3>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-gray-400 mb-1 block">体重 (g)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={weightInput}
+                      onChange={(e) => setWeightInput(e.target.value)}
+                      placeholder="0.0"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-gray-400 mb-1 block">体長 (cm)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={lengthInput}
+                      onChange={(e) => setLengthInput(e.target.value)}
+                      placeholder="0.0"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* 7. ケアトグル（8項目） */}
+              <section>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">ケア記録</h3>
+                <div className="grid grid-cols-4 gap-2">
+                  {CARE_TOGGLE_ITEMS.map((item) => {
+                    const IconComp = item.icon;
+                    const isOn = toggleCares[item.key] ?? false;
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={() =>
+                          setToggleCares((prev) => ({ ...prev, [item.key]: !isOn }))
+                        }
+                        className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
+                          ${isOn ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                      >
+                        <IconComp className={`w-5 h-5 ${isOn ? item.color : "text-gray-300"}`} />
+                        <span className={`text-[10px] ${isOn ? "text-gray-700 font-medium" : "text-gray-400"}`}>
+                          {item.label}
+                        </span>
+                        {isOn && <Check className="w-3 h-3 text-blue-500" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* 8. メモ */}
+              <section>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">メモ</h3>
+                <textarea
+                  value={memoInput}
+                  onChange={(e) => setMemoInput(e.target.value)}
+                  placeholder="自由メモ（任意）"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-blue-400"
+                />
+              </section>
+
+              {/* 下部余白（セーフエリア） */}
+              <div className="h-6" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
