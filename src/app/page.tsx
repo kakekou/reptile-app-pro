@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Bug, Sparkles, Weight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Weight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 // ── 型定義 ──────────────────────────────────────────────
@@ -24,17 +24,32 @@ interface IndividualTab {
 interface CareEvent {
   type: CareType;
   date: string; // "YYYY-MM-DD"
+  foodType?: string;
+  dusting?: boolean;
+}
+
+interface FoodIcon {
+  type: string;
+  symbol: string;
+  color: string;
 }
 
 // ── 定数 ──────────────────────────────────────────────
 
 const CARE_ITEMS: CareItem[] = [
-  { type: "feeding",  label: "給餌",     icon: Bug,      color: "text-amber-600" },
-  { type: "shedding", label: "脱皮",     icon: Sparkles, color: "text-purple-500" },
-  { type: "weight",   label: "体重計測", icon: Weight,    color: "text-emerald-500" },
+  { type: "feeding",  label: "給餌",     icon: () => null, color: "text-amber-600" },
+  { type: "shedding", label: "脱皮",     icon: Sparkles,   color: "text-purple-500" },
+  { type: "weight",   label: "体重計測", icon: Weight,      color: "text-emerald-500" },
 ];
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+const FOOD_ICONS: Record<string, FoodIcon> = {
+  "コオロギ":   { type: "コオロギ",   symbol: "コ", color: "text-amber-700" },
+  "デュビア":   { type: "デュビア",   symbol: "デ", color: "text-red-600" },
+  "ミルワーム": { type: "ミルワーム", symbol: "ミ", color: "text-yellow-600" },
+  "人工フード": { type: "人工フード", symbol: "人", color: "text-blue-600" },
+};
 
 // ── ユーティリティ関数 ─────────────────────────────────
 
@@ -141,7 +156,7 @@ export default function WeeklyCareMatrixPage() {
     Promise.all([
       supabase
         .from("feedings")
-        .select("id, fed_at")
+        .select("id, fed_at, food_type, dusting")
         .eq("individual_id", selectedId)
         .gte("fed_at", startDate + "T00:00:00")
         .lte("fed_at", endDate + "T23:59:59"),
@@ -165,6 +180,8 @@ export default function WeeklyCareMatrixPage() {
       const feedEvents: CareEvent[] = (feedRes.data ?? []).map((f) => ({
         type: "feeding" as CareType,
         date: f.fed_at.slice(0, 10),
+        foodType: f.food_type,
+        dusting: f.dusting,
       }));
       const shedEvents: CareEvent[] = (shedRes.data ?? []).map((s) => ({
         type: "shedding" as CareType,
@@ -232,7 +249,7 @@ export default function WeeklyCareMatrixPage() {
               <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
-        ) : !loading && individuals.length === 0 ? (
+        ) : individuals.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
             <p className="text-gray-400 text-sm">個体が登録されていません</p>
             <a
@@ -277,23 +294,33 @@ export default function WeeklyCareMatrixPage() {
 
             {/* C-2. グリッド本体 */}
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed" style={{ minWidth: "480px" }}>
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col className="w-[52px]" />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                </colgroup>
                 <thead>
                   <tr>
-                    <th className="w-14 p-1 sticky left-0 z-10 bg-white"></th>
+                    <th className="p-0.5 sticky left-0 z-10 bg-white"></th>
                     {weekDates.map((date) => {
                       const { day, weekday } = formatDate(date);
                       const isToday = date === todayString;
                       return (
-                        <th key={date} className="p-1 text-center">
+                        <th key={date} className="p-0.5 text-center">
                           <div className="flex flex-col items-center gap-0.5 py-1">
-                            <span className="text-[10px] text-gray-400 font-medium">{weekday}</span>
+                            <span className="text-[10px] text-gray-400 font-medium leading-none">{weekday}</span>
                             {isToday ? (
-                              <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-sm font-bold inline-flex items-center justify-center">
+                              <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold inline-flex items-center justify-center mt-0.5">
                                 {day}
                               </span>
                             ) : (
-                              <span className="text-sm font-bold text-gray-800">{day}</span>
+                              <span className="text-xs font-bold text-gray-800 mt-0.5">{day}</span>
                             )}
                           </div>
                         </th>
@@ -306,10 +333,14 @@ export default function WeeklyCareMatrixPage() {
                     const Icon = care.icon;
                     return (
                       <tr key={care.type} className="border-t border-gray-100">
-                        <td className="p-1 text-center sticky left-0 z-10 bg-white border-r border-gray-100">
+                        <td className="p-0.5 text-center sticky left-0 z-10 bg-white border-r border-gray-100">
                           <div className="flex flex-col items-center gap-0.5">
-                            <Icon className={`w-4 h-4 ${care.color}`} />
-                            <span className="text-[10px] text-gray-400 font-medium">{care.label}</span>
+                            {care.type === "feeding" ? (
+                              <span className="text-[11px] font-bold text-amber-600 leading-none">餌</span>
+                            ) : (
+                              <Icon className={`w-3.5 h-3.5 ${care.color}`} />
+                            )}
+                            <span className="text-[9px] text-gray-400 font-medium leading-none mt-0.5">{care.label}</span>
                           </div>
                         </td>
                         {weekDates.map((date) => {
@@ -320,10 +351,39 @@ export default function WeeklyCareMatrixPage() {
                           return (
                             <td
                               key={date}
-                              className={`p-1 text-center ${isToday ? "bg-blue-50/40" : ""}`}
+                              className={`p-0.5 text-center ${isToday ? "bg-blue-50/40" : ""}`}
                             >
-                              <div className="w-full h-10 flex items-center justify-center cursor-pointer hover:bg-gray-50 rounded transition-colors">
-                                {hasRecord && <Icon className={`w-5 h-5 ${care.color}`} />}
+                              <div className="w-full h-9 flex items-center justify-center cursor-pointer hover:bg-gray-50 rounded transition-colors">
+                                {care.type === "feeding" ? (
+                                  (() => {
+                                    const dayFeedings = events.filter(
+                                      (e) => e.type === "feeding" && e.date === date
+                                    );
+                                    if (dayFeedings.length === 0) return null;
+                                    return (
+                                      <div className="flex items-center justify-center gap-0.5 flex-wrap">
+                                        {dayFeedings.map((f, i) => {
+                                          const foodIcon = FOOD_ICONS[f.foodType ?? ""] ?? {
+                                            symbol: "?",
+                                            color: "text-gray-400",
+                                          };
+                                          return (
+                                            <div key={i} className="relative">
+                                              <span className={`text-[11px] font-bold ${foodIcon.color}`}>
+                                                {foodIcon.symbol}
+                                              </span>
+                                              {f.dusting && (
+                                                <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })()
+                                ) : (
+                                  hasRecord && <Icon className={`w-4 h-4 ${care.color}`} />
+                                )}
                               </div>
                             </td>
                           );
@@ -333,6 +393,21 @@ export default function WeeklyCareMatrixPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* 凡例 */}
+            <div className="flex items-center gap-3 px-4 py-2 border-t border-gray-50">
+              <span className="text-[10px] text-gray-300">凡例:</span>
+              {Object.values(FOOD_ICONS).map((f) => (
+                <span key={f.type} className="flex items-center gap-0.5">
+                  <span className={`text-[10px] font-bold ${f.color}`}>{f.symbol}</span>
+                  <span className="text-[9px] text-gray-400">{f.type}</span>
+                </span>
+              ))}
+              <span className="flex items-center gap-0.5">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                <span className="text-[9px] text-gray-400">Ca+</span>
+              </span>
             </div>
           </div>
         )}

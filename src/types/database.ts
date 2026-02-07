@@ -59,6 +59,7 @@ export interface Feeding {
   food_type: FoodType;
   quantity: number;
   refused: boolean;
+  dusting: boolean;
   notes: string;
   created_at: string;
 }
