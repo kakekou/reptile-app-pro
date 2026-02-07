@@ -264,14 +264,11 @@ function normalizeEvents(
   measData: any[] | null,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   healthData: any[] | null,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  careData: any[] | null,
 ): CareEvent[] {
   const feedEvents: CareEvent[] = (feedData ?? []).map((f) => ({
     type: "feeding" as CareType,
     date: f.fed_at.slice(0, 10),
     foodType: f.food_type,
-    dusting: f.dusting,
   }));
 
   const shedEvents: CareEvent[] = (shedData ?? []).map((s) => ({
@@ -291,12 +288,7 @@ function normalizeEvents(
     condition: h.condition,
   }));
 
-  const careLogEvents: CareEvent[] = (careData ?? []).map((c) => ({
-    type: c.log_type as CareType,
-    date: c.logged_on.slice(0, 10),
-  }));
-
-  return [...feedEvents, ...shedEvents, ...measEvents, ...healthEvents, ...careLogEvents];
+  return [...feedEvents, ...shedEvents, ...measEvents, ...healthEvents];
 }
 
 // ── セル描画（週表示用） ──────────────────────────────
@@ -640,7 +632,7 @@ export default function WeeklyCareMatrixPage() {
     const endDate = weekDates[6];
 
     Promise.all([
-      supabase.from("feedings").select("id, fed_at, food_type, dusting")
+      supabase.from("feedings").select("id, fed_at, food_type")
         .eq("individual_id", selectedId)
         .gte("fed_at", startDate + "T00:00:00").lte("fed_at", endDate + "T23:59:59"),
       supabase.from("sheds").select("id, shed_on")
@@ -652,17 +644,13 @@ export default function WeeklyCareMatrixPage() {
       supabase.from("health_logs").select("id, logged_on, condition")
         .eq("individual_id", selectedId)
         .gte("logged_on", startDate).lte("logged_on", endDate),
-      supabase.from("care_logs").select("id, log_type, logged_on")
-        .eq("individual_id", selectedId)
-        .gte("logged_on", startDate).lte("logged_on", endDate),
-    ]).then(([feedRes, shedRes, measRes, healthRes, careRes]) => {
+    ]).then(([feedRes, shedRes, measRes, healthRes]) => {
       if (feedRes.error) console.error("Failed to fetch feedings:", feedRes.error);
       if (shedRes.error) console.error("Failed to fetch sheds:", shedRes.error);
       if (measRes.error) console.error("Failed to fetch measurements:", measRes.error);
       if (healthRes.error) console.error("Failed to fetch health_logs:", healthRes.error);
-      if (careRes.error) console.error("Failed to fetch care_logs:", careRes.error);
 
-      setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data, careRes.data));
+      setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, selectedId, weekOffset, refetchCount]);
@@ -675,7 +663,7 @@ export default function WeeklyCareMatrixPage() {
     const supabase = createClient();
 
     Promise.all([
-      supabase.from("feedings").select("id, fed_at, food_type, dusting")
+      supabase.from("feedings").select("id, fed_at, food_type")
         .eq("individual_id", selectedId)
         .gte("fed_at", startDate + "T00:00:00").lte("fed_at", endDate + "T23:59:59"),
       supabase.from("sheds").select("id, shed_on")
@@ -687,17 +675,13 @@ export default function WeeklyCareMatrixPage() {
       supabase.from("health_logs").select("id, logged_on, condition")
         .eq("individual_id", selectedId)
         .gte("logged_on", startDate).lte("logged_on", endDate),
-      supabase.from("care_logs").select("id, log_type, logged_on")
-        .eq("individual_id", selectedId)
-        .gte("logged_on", startDate).lte("logged_on", endDate),
-    ]).then(([feedRes, shedRes, measRes, healthRes, careRes]) => {
+    ]).then(([feedRes, shedRes, measRes, healthRes]) => {
       if (feedRes.error) console.error("Failed to fetch feedings:", feedRes.error);
       if (shedRes.error) console.error("Failed to fetch sheds:", shedRes.error);
       if (measRes.error) console.error("Failed to fetch measurements:", measRes.error);
       if (healthRes.error) console.error("Failed to fetch health_logs:", healthRes.error);
-      if (careRes.error) console.error("Failed to fetch care_logs:", careRes.error);
 
-      setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data, careRes.data));
+      setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, selectedId, monthOffset, refetchCount]);
