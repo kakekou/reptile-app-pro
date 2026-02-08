@@ -1091,7 +1091,7 @@ export default function WeeklyCareMatrixPage() {
               <section>
                 <h3 className="text-sm font-bold text-slate-300 mb-3">給餌</h3>
                 <Link
-                  href={`/feeding?individual_id=${selectedId}&date=${modalDate}`}
+                  href={`/record?individual_id=${selectedId}&date=${modalDate}&section=feeding`}
                   onClick={() => setModalOpen(false)}
                   className="flex items-center justify-between w-full p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20 active:scale-[0.98] transition-transform"
                 >

@@ -8,7 +8,6 @@ import {
   Meh,
   Frown,
   Utensils,
-  ChevronRight,
   Circle,
   Droplets,
   Ban,
@@ -84,8 +83,20 @@ function RecordPageContent() {
   const [existingShedId, setExistingShedId] = useState<string | null>(null);
   const [existingMeasurementId, setExistingMeasurementId] = useState<string | null>(null);
 
-  // 給餌サマリー
+  // 給餌サマリー（既存レコード表示用）
   const [feedingSummary, setFeedingSummary] = useState<{ id: string; food_type: string; quantity: number }[]>([]);
+
+  // 給餌インライン入力
+  const [foodType, setFoodType] = useState('');
+  const [feedQuantity, setFeedQuantity] = useState('');
+  const [feedUnit, setFeedUnit] = useState<'個' | 'g'>('個');
+  const [supplements, setSupplements] = useState({ calcium: false, vitamin: false });
+  const [refused, setRefused] = useState(false);
+  const [foodHistory, setFoodHistory] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // サジェスト用ref
+  const suggestionWrapperRef = useRef<HTMLDivElement>(null);
 
   // セクションref（auto-scroll用）
   const conditionRef = useRef<HTMLElement>(null);
@@ -179,6 +190,34 @@ function RecordPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionParam, loading]);
 
+  // ── 食材履歴の取得（サジェスト用）──
+  useEffect(() => {
+    if (!individualId) return;
+    const supabase = createClient();
+    supabase
+      .from('feedings')
+      .select('food_type')
+      .eq('individual_id', individualId)
+      .not('food_type', 'is', null)
+      .order('fed_at', { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        const unique = [...new Set(data?.map((f) => f.food_type).filter(Boolean))] as string[];
+        setFoodHistory(unique);
+      });
+  }, [individualId]);
+
+  // ── サジェスト外側クリックで閉じる ──
+  useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      if (suggestionWrapperRef.current && !suggestionWrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, []);
+
   // ── 給餌レコード削除 ──
   async function handleDeleteFeeding(feedingId: string) {
     const supabase = createClient();
@@ -190,8 +229,10 @@ function RecordPageContent() {
 
   // ── 保存処理 ──
   async function handleSave() {
+    const hasFeeding = refused || (foodType.trim() !== '');
     const hasAny =
       condition !== null ||
+      hasFeeding ||
       poop !== null ||
       urine !== null ||
       shed !== null ||
@@ -233,6 +274,30 @@ function RecordPageContent() {
           ops.push(supabase.from(table).delete().eq('id', existingId));
         }
       };
+
+      // 0. 給餌 → feedings (INSERT only、既存はfeedingSummaryで管理)
+      if (hasFeeding) {
+        const dustingVal = supplements.calcium && supplements.vitamin
+          ? 'calcium+vitamin'
+          : supplements.calcium ? 'calcium'
+          : supplements.vitamin ? 'vitamin'
+          : null;
+        const fedAt = dateParam
+          ? `${dateParam}T${new Date().toTimeString().slice(0, 8)}`
+          : new Date().toISOString();
+        ops.push(
+          supabase.from('feedings').insert({
+            user_id: userId,
+            individual_id: individualId,
+            fed_at: fedAt,
+            food_type: refused ? null : foodType.trim() || null,
+            quantity: refused ? 0 : (feedQuantity ? parseFloat(feedQuantity) : 0),
+            dusting: !refused && (supplements.calcium || supplements.vitamin),
+            refused,
+            notes: !refused && dustingVal ? dustingVal : '',
+          }).select()
+        );
+      }
 
       // 1. 体調 → health_logs
       upsertOrDelete('health_logs', existingHealthLogId, !!condition,
@@ -371,27 +436,13 @@ function RecordPageContent() {
             </div>
           </section>
 
-          {/* ── 2. 給餌リンク ── */}
-          <section ref={feedingRef}>
+          {/* ── 2. 給餌（インライン入力）── */}
+          <section ref={feedingRef} id="feeding-section">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider pl-1 mb-4">給餌</h3>
-            <button
-              type="button"
-              onClick={() => router.push(`/feeding?individual_id=${individualId}&date=${dateParam}`)}
-              className="w-full rounded-2xl bg-[#1E293B] border border-[#334155] p-4 group flex items-center hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:border-[#10B981]/50 transition-all"
-            >
-              <div className="w-12 h-12 rounded-xl bg-orange-900/30 text-orange-400 flex items-center justify-center group-hover:bg-[#10B981] group-hover:text-white transition-colors">
-                <Utensils className="w-6 h-6" />
-              </div>
-              <div className="ml-3 flex-1 text-left">
-                <span className="font-bold text-slate-100">給餌を記録する</span>
-                <p className="text-xs text-slate-400 mt-0.5">種類・量・サプリを入力</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
-            </button>
 
-            {/* 給餌サマリーチップ */}
+            {/* 既存の給餌レコード */}
             {feedingSummary.length > 0 && (
-              <div className="mt-3 flex items-center flex-wrap gap-2">
+              <div className="flex items-center flex-wrap gap-2 mb-4">
                 {feedingSummary.map((f) => (
                   <span
                     key={f.id}
@@ -409,6 +460,119 @@ function RecordPageContent() {
                 ))}
               </div>
             )}
+
+            {/* 拒食チェック */}
+            <button
+              type="button"
+              onClick={() => setRefused((v) => !v)}
+              className={`w-full py-2.5 rounded-xl border text-sm flex items-center justify-center gap-2 transition-all mb-3
+                ${refused
+                  ? 'border-red-500/30 bg-red-500/10 text-red-400 font-bold'
+                  : 'bg-[#1E293B] border-[#334155] text-slate-400'
+                }`}
+            >
+              {refused && <Ban className="w-4 h-4" />}
+              拒食
+            </button>
+
+            {/* 入力エリア（拒食時グレーアウト）*/}
+            <div className={refused ? 'opacity-30 pointer-events-none' : ''}>
+              {/* 餌の種類（サジェスト付き）*/}
+              <div className="relative" ref={suggestionWrapperRef}>
+                <div className="relative group">
+                  <Utensils className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#10B981] transition-colors" />
+                  <input
+                    type="text"
+                    value={foodType}
+                    onChange={(e) => { setFoodType(e.target.value); setShowSuggestions(true); }}
+                    onFocus={() => setShowSuggestions(true)}
+                    placeholder="餌の種類を入力..."
+                    className="w-full py-3 pl-10 pr-4 bg-[#1E293B] border border-[#334155] rounded-xl text-slate-100 placeholder:text-slate-600 focus:border-[#10B981] focus:ring-0 outline-none text-sm"
+                  />
+                </div>
+                {/* サジェストドロップダウン */}
+                {showSuggestions && (() => {
+                  const filtered = foodType.trim()
+                    ? foodHistory.filter((f) => f.toLowerCase().includes(foodType.toLowerCase()))
+                    : foodHistory.slice(0, 5);
+                  if (filtered.length === 0) return null;
+                  return (
+                    <div className="absolute z-10 w-full mt-1 bg-[#1E293B] border border-[#334155] rounded-xl shadow-lg overflow-hidden">
+                      {filtered.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => { setFoodType(item); setShowSuggestions(false); }}
+                          className="w-full px-4 py-3 hover:bg-white/5 text-sm text-slate-200 text-left border-b border-[#334155] last:border-none"
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* 数量 + 単位切替 */}
+              <div className="flex gap-3 mt-3">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={feedQuantity}
+                  onChange={(e) => setFeedQuantity(e.target.value)}
+                  placeholder="0"
+                  className="flex-1 py-3 px-4 bg-[#1E293B] border border-[#334155] rounded-xl text-slate-100 placeholder:text-slate-600 focus:border-[#10B981] focus:ring-0 outline-none text-sm"
+                />
+                <div className="flex bg-[#1E293B] border border-[#334155] p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setFeedUnit('個')}
+                    className={`px-3 py-1.5 text-xs rounded-md transition-all ${
+                      feedUnit === '個' ? 'bg-white/10 text-[#10B981] font-bold' : 'text-slate-400 font-medium'
+                    }`}
+                  >
+                    個
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFeedUnit('g')}
+                    className={`px-3 py-1.5 text-xs rounded-md transition-all ${
+                      feedUnit === 'g' ? 'bg-white/10 text-[#10B981] font-bold' : 'text-slate-400 font-medium'
+                    }`}
+                  >
+                    g
+                  </button>
+                </div>
+              </div>
+
+              {/* サプリメント */}
+              <div className="flex gap-3 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setSupplements((s) => ({ ...s, calcium: !s.calcium }))}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm flex items-center justify-center gap-1.5 transition-all
+                    ${supplements.calcium
+                      ? 'bg-[#10B981]/10 border-[#10B981]/30 text-[#10B981] font-bold'
+                      : 'bg-[#1E293B] border-[#334155] text-slate-400 font-medium'
+                    }`}
+                >
+                  {supplements.calcium && <Check className="w-4 h-4" />}
+                  カルシウム
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSupplements((s) => ({ ...s, vitamin: !s.vitamin }))}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm flex items-center justify-center gap-1.5 transition-all
+                    ${supplements.vitamin
+                      ? 'bg-[#10B981]/10 border-[#10B981]/30 text-[#10B981] font-bold'
+                      : 'bg-[#1E293B] border-[#334155] text-slate-400 font-medium'
+                    }`}
+                >
+                  {supplements.vitamin && <Check className="w-4 h-4" />}
+                  ビタミン
+                </button>
+              </div>
+            </div>
           </section>
 
           {/* ── 3. 排泄 ── */}
