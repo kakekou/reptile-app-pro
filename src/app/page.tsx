@@ -345,6 +345,13 @@ export default function WeeklyCareMatrixPage() {
   const [saving, setSaving] = useState(false);
   const [conditionInput, setConditionInput] = useState<string | null>(null);
   const [feedingInputs, setFeedingInputs] = useState<FeedingInput[]>([]);
+  const [foodType, setFoodType] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [feedUnit, setFeedUnit] = useState<"個" | "g">("個");
+  const [supplements, setSupplements] = useState<{ calcium: boolean; vitamin: boolean }>({ calcium: false, vitamin: false });
+  const [refused, setRefused] = useState(false);
+  const [foodSuggestions, setFoodSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [poopInput, setPoopInput] = useState<string | null>(null);
   const [urineInput, setUrineInput] = useState<string | null>(null);
   const [shedInput, setShedInput] = useState<string | null>(null);
@@ -378,6 +385,12 @@ export default function WeeklyCareMatrixPage() {
   function resetAllInputs() {
     setConditionInput(null);
     setFeedingInputs([]);
+    setFoodType("");
+    setQuantity("");
+    setFeedUnit("個");
+    setSupplements({ calcium: false, vitamin: false });
+    setRefused(false);
+    setShowSuggestions(false);
     setPoopInput(null);
     setUrineInput(null);
     setShedInput(null);
@@ -471,8 +484,8 @@ export default function WeeklyCareMatrixPage() {
     const previousEvents = [...events];
     const newDayEvents: CareEvent[] = [];
     if (conditionInput) newDayEvents.push({ type: 'condition', date: modalDate, condition: conditionInput });
-    for (const fi of feedingInputs) {
-      newDayEvents.push({ type: 'feeding', date: modalDate, foodType: fi.foodType });
+    if (refused || foodType.trim()) {
+      newDayEvents.push({ type: 'feeding', date: modalDate, foodType: refused ? '拒食' : foodType.trim() });
     }
     if (poopInput) newDayEvents.push({ type: 'poop', date: modalDate });
     if (urineInput) newDayEvents.push({ type: 'urine', date: modalDate });
@@ -521,7 +534,36 @@ export default function WeeklyCareMatrixPage() {
         { condition: conditionInput },
       );
 
-      // 2. 給餌は専用ページ（/feeding）で管理
+      // 2. 給餌 → feedings
+      if (refused) {
+        // 拒食記録
+        ops.push(
+          supabase.from('feedings').insert({
+            user_id: userId,
+            individual_id: selectedId,
+            fed_at: modalDate + 'T12:00:00',
+            food_type: 'なし',
+            quantity: 0,
+            refused: true,
+            dusting: false,
+          }).select().then(r => r)
+        );
+      } else if (foodType.trim()) {
+        // 通常給餌
+        const dustingValue = supplements.calcium && supplements.vitamin
+          ? true : supplements.calcium ? true : supplements.vitamin ? true : false;
+        ops.push(
+          supabase.from('feedings').insert({
+            user_id: userId,
+            individual_id: selectedId,
+            fed_at: modalDate + 'T12:00:00',
+            food_type: foodType.trim(),
+            quantity: quantity ? Number(quantity) : 0,
+            refused: false,
+            dusting: dustingValue,
+          }).select().then(r => r)
+        );
+      }
 
       // 3. 脱皮 → sheds
       const shedComp = shedInput === '脱皮完了' ? '完全' : shedInput === '不完全' ? '不完全' : '完全';
@@ -577,6 +619,22 @@ export default function WeeklyCareMatrixPage() {
       setSaving(false);
     }
   };
+
+  // Effect 0: 餌の種類サジェスト取得（選択個体が変わった時）
+  useEffect(() => {
+    if (!selectedId) return;
+    const supabase = createClient();
+    supabase
+      .from("feedings")
+      .select("food_type")
+      .eq("individual_id", selectedId)
+      .not("food_type", "is", "null")
+      .order("fed_at", { ascending: false })
+      .then(({ data }) => {
+        const uniqueFoods = [...new Set(data?.map((f: any) => f.food_type).filter(Boolean))] as string[];
+        setFoodSuggestions(uniqueFoods);
+      });
+  }, [selectedId]);
 
   // Effect 1: 個体一覧の取得（マウント時1回）
   useEffect(() => {
@@ -1090,34 +1148,109 @@ export default function WeeklyCareMatrixPage() {
               {/* 2. 給餌 */}
               <section>
                 <h3 className="text-sm font-bold text-slate-300 mb-3">給餌</h3>
-                <Link
-                  href={`/record?individual_id=${selectedId}&date=${modalDate}&section=feeding`}
-                  onClick={() => setModalOpen(false)}
-                  className="flex items-center justify-between w-full p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20 active:scale-[0.98] transition-transform"
+
+                {/* a) 拒食ボタン */}
+                <button
+                  type="button"
+                  onClick={() => setRefused(!refused)}
+                  className={`w-full py-2.5 rounded-xl border text-sm text-center transition-colors flex items-center justify-center gap-2 ${
+                    refused
+                      ? "border-red-500/30 bg-red-500/10 text-red-400 font-bold"
+                      : "bg-[#1E293B] border-[#334155] text-slate-400"
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                      <Utensils className="w-5 h-5 text-orange-400" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-bold text-white">給餌を記録する</span>
-                      <p className="text-xs text-slate-500 mt-0.5">種類・量・サプリを入力</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-500" />
-                </Link>
-                {feedingInputs.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    {feedingInputs.map((fi) => (
-                      <div key={fi.foodType} className="flex items-center gap-2 py-1.5 px-3 bg-[#0F172A]/50 rounded-lg border border-white/10 text-xs">
-                        <span className="font-medium text-slate-300">{fi.foodType}</span>
-                        <span className="text-slate-500">×</span>
-                        <span className="font-bold text-white">{fi.quantity}</span>
-                        {fi.dusting && <span className="text-emerald-400 font-medium">Ca</span>}
+                  {refused && <Ban className="w-4 h-4" />}
+                  拒食
+                </button>
+
+                {/* b〜d: 拒食時は半透明+操作不可 */}
+                <div className={refused ? "opacity-30 pointer-events-none" : ""}>
+                  {/* b) 餌の種類テキスト入力 */}
+                  <div className="relative mt-3">
+                    <Utensils className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={foodType}
+                      onChange={(e) => setFoodType(e.target.value)}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                      placeholder="餌の種類を入力..."
+                      className="w-full py-3 px-4 pl-10 bg-[#1E293B] border border-[#334155] rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-primary/50"
+                    />
+                    {showSuggestions && foodSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-[#1E293B] border border-[#334155] rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {foodSuggestions
+                          .filter((s) => s.toLowerCase().includes(foodType.toLowerCase()))
+                          .map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => {
+                                setFoodType(s);
+                                setShowSuggestions(false);
+                              }}
+                              className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm text-slate-200 cursor-pointer"
+                            >
+                              {s}
+                            </button>
+                          ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+
+                  {/* c) 数量 + 単位切替 */}
+                  <div className="mt-3 flex gap-3">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      placeholder="0"
+                      className="flex-1 py-3 px-4 bg-[#1E293B] border border-[#334155] rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-primary/50"
+                    />
+                    <div className="bg-[#1E293B] border border-[#334155] p-1 rounded-lg flex">
+                      {(["個", "g"] as const).map((u) => (
+                        <button
+                          key={u}
+                          type="button"
+                          onClick={() => setFeedUnit(u)}
+                          className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${
+                            feedUnit === u
+                              ? "bg-white/10 text-primary"
+                              : "text-slate-500"
+                          }`}
+                        >
+                          {u}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* d) サプリ選択 */}
+                  <div className="mt-3 flex gap-3">
+                    {([
+                      { key: "calcium" as const, label: "カルシウム" },
+                      { key: "vitamin" as const, label: "ビタミン" },
+                    ]).map(({ key, label }) => {
+                      const isOn = supplements[key];
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setSupplements((prev) => ({ ...prev, [key]: !prev[key] }))}
+                          className={`flex-1 py-2.5 rounded-xl border text-sm text-center transition-colors flex items-center justify-center gap-1 ${
+                            isOn
+                              ? "bg-primary/10 border-primary/30 text-primary font-bold"
+                              : "bg-[#1E293B] border-[#334155] text-slate-400"
+                          }`}
+                        >
+                          {isOn && <Check className="w-4 h-4" />}
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </section>
 
               {/* 3. 排泄（うんち） */}
