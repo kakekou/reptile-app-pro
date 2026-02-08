@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   Pencil,
   Camera,
-  Plus,
   X,
   Dna,
   Scale,
@@ -23,6 +22,7 @@ import {
   Pill,
   Hospital,
   ClipboardList,
+  ClipboardPlus,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -157,7 +157,7 @@ export default function IndividualDetailPage() {
   const [chartYear, setChartYear] = useState(new Date().getFullYear());
   const [lengthPeriod, setLengthPeriod] = useState('all');
   const [weightPeriod, setWeightPeriod] = useState('all');
-  const [showFabMenu, setShowFabMenu] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOwnerChange, setShowOwnerChange] = useState(false);
@@ -494,13 +494,57 @@ export default function IndividualDetailPage() {
             )}
           </div>
 
-          <button
-            onClick={openEditModal}
-            className="mx-auto mt-4 px-6 py-2.5 rounded-xl bg-white/5 border border-[#334155] text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
-          >
-            <Pencil className="w-4 h-4" />
-            個体情報を編集
-          </button>
+          <div className="flex justify-center gap-3 mt-4">
+            <button
+              onClick={openEditModal}
+              className="px-5 py-2.5 rounded-xl bg-white/5 border border-[#334155] text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <Pencil className="w-4 h-4" />
+              編集
+            </button>
+            <button
+              onClick={() => setShowQuickActions(!showQuickActions)}
+              className="px-5 py-2.5 rounded-xl bg-primary/10 border border-primary/30 text-sm text-primary hover:bg-primary/20 transition-colors flex items-center gap-2"
+            >
+              <ClipboardPlus className="w-4 h-4" />
+              記録
+            </button>
+          </div>
+
+          {showQuickActions && (
+            <div className="relative z-40">
+              <div className="fixed inset-0 z-30" onClick={() => setShowQuickActions(false)} />
+              <div className="flex justify-center gap-3 mt-3 relative z-40">
+                <Link
+                  href={`/individuals/${id}/feeding`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1E293B]/70 backdrop-blur-sm border border-white/5 text-sm text-white hover:bg-[#1E293B] transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Utensils className="w-4 h-4 text-primary" />
+                  </div>
+                  給餌
+                </Link>
+                <Link
+                  href={`/individuals/${id}/growth`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1E293B]/70 backdrop-blur-sm border border-white/5 text-sm text-white hover:bg-[#1E293B] transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
+                    <Scale className="w-4 h-4 text-purple-400" />
+                  </div>
+                  計測
+                </Link>
+                <Link
+                  href={`/individuals/${id}/health`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1E293B]/70 backdrop-blur-sm border border-white/5 text-sm text-white hover:bg-[#1E293B] transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-green-400" />
+                  </div>
+                  体調
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ═══ ステータスカード（3列） ═══ */}
@@ -743,47 +787,6 @@ export default function IndividualDetailPage() {
         </div>
       </div>
 
-      {/* ═══ FAB メニューオーバーレイ ═══ */}
-      {showFabMenu && (
-        <div
-          className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-[2px]"
-          onClick={() => setShowFabMenu(false)}
-        />
-      )}
-
-      {/* ═══ FAB メニュー ═══ */}
-      {showFabMenu && (
-        <div className="fixed bottom-24 right-6 z-[9999] flex flex-col gap-2">
-          <Link
-            href={`/individuals/${id}/feeding`}
-            className="flex items-center gap-3 bg-[#1E293B] rounded-full pl-4 pr-5 py-3 shadow-lg border border-white/10"
-          >
-            <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
-              <Utensils size={16} className="text-primary" />
-            </div>
-            <span className="text-sm font-bold text-white">給餌</span>
-          </Link>
-          <Link
-            href={`/individuals/${id}/growth`}
-            className="flex items-center gap-3 bg-[#1E293B] rounded-full pl-4 pr-5 py-3 shadow-lg border border-white/10"
-          >
-            <div className="w-8 h-8 rounded-full bg-purple-500/15 flex items-center justify-center">
-              <Scale size={16} className="text-purple-400" />
-            </div>
-            <span className="text-sm font-bold text-white">計測</span>
-          </Link>
-          <Link
-            href={`/individuals/${id}/health`}
-            className="flex items-center gap-3 bg-[#1E293B] rounded-full pl-4 pr-5 py-3 shadow-lg border border-white/10"
-          >
-            <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center">
-              <Heart size={16} className="text-green-400" />
-            </div>
-            <span className="text-sm font-bold text-white">体調</span>
-          </Link>
-        </div>
-      )}
-
       {/* ═══ 編集モーダル（ボトムシート） ═══ */}
       {showEditModal && (
         <>
@@ -986,17 +989,6 @@ export default function IndividualDetailPage() {
         </div>
       )}
 
-      {/* ═══ FAB ═══ */}
-      <button
-        onClick={() => setShowFabMenu(!showFabMenu)}
-        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 bg-primary rounded-full shadow-[0_0_20px_rgba(16,183,127,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
-      >
-        {showFabMenu ? (
-          <X size={28} className="text-white" />
-        ) : (
-          <Plus size={28} className="text-white" />
-        )}
-      </button>
     </div>
   );
 }
