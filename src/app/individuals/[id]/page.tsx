@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   MoreHorizontal,
+  Pencil,
   Camera,
   Plus,
   X,
@@ -162,6 +163,15 @@ export default function IndividualDetailPage() {
   const [showOwnerChange, setShowOwnerChange] = useState(false);
   const [newOwnerId, setNewOwnerId] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [refetchKey, setRefetchKey] = useState(0);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editSpecies, setEditSpecies] = useState('');
+  const [editMorph, setEditMorph] = useState('');
+  const [editSex, setEditSex] = useState('');
+  const [editBirthday, setEditBirthday] = useState('');
+  const [editStatus, setEditStatus] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -187,7 +197,40 @@ export default function IndividualDetailPage() {
       setCareLogs((careRes.data ?? []) as CareLogRow[]);
       setLoading(false);
     });
-  }, [id]);
+  }, [id, refetchKey]);
+
+  const openEditModal = () => {
+    if (!individual) return;
+    setEditName(individual.name || '');
+    setEditSpecies(individual.species || '');
+    setEditMorph(individual.morph || '');
+    setEditSex(individual.sex || '');
+    setEditBirthday(individual.birth_date || '');
+    setEditStatus(individual.status || '飼育中');
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editName.trim()) return;
+    setEditSaving(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('individuals')
+      .update({
+        name: editName.trim(),
+        species: editSpecies.trim() as any,
+        morph: editMorph.trim(),
+        sex: editSex as any,
+        birth_date: editBirthday || null,
+        status: editStatus as any,
+      })
+      .eq('id', id);
+    if (!error) {
+      setShowEditModal(false);
+      setRefetchKey((k) => k + 1);
+    }
+    setEditSaving(false);
+  };
 
   // ── 集計値 ──
 
@@ -450,6 +493,14 @@ export default function IndividualDetailPage() {
               </span>
             )}
           </div>
+
+          <button
+            onClick={openEditModal}
+            className="mx-auto mt-4 px-6 py-2.5 rounded-xl bg-white/5 border border-[#334155] text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+          >
+            <Pencil className="w-4 h-4" />
+            個体情報を編集
+          </button>
         </div>
 
         {/* ═══ ステータスカード（3列） ═══ */}
@@ -731,6 +782,131 @@ export default function IndividualDetailPage() {
             <span className="text-sm font-bold text-white">体調</span>
           </Link>
         </div>
+      )}
+
+      {/* ═══ 編集モーダル（ボトムシート） ═══ */}
+      {showEditModal && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setShowEditModal(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#1E293B] rounded-t-3xl max-h-[85vh] overflow-y-auto border-t border-white/10">
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3" />
+            <div className="flex justify-between items-center px-6 pt-4 pb-2">
+              <h3 className="text-lg font-bold text-white">個体情報を編集</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="px-6 pb-8 space-y-5">
+              {/* ① 名前 */}
+              <div>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">名前</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="個体名を入力"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0F172A] border border-[#334155] text-white text-sm placeholder:text-slate-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              {/* ② 種類 */}
+              <div>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">種類</label>
+                <input
+                  type="text"
+                  value={editSpecies}
+                  onChange={(e) => setEditSpecies(e.target.value)}
+                  placeholder="例: レオパードゲッコー"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0F172A] border border-[#334155] text-white text-sm placeholder:text-slate-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              {/* ③ モルフ */}
+              <div>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">モルフ</label>
+                <input
+                  type="text"
+                  value={editMorph}
+                  onChange={(e) => setEditMorph(e.target.value)}
+                  placeholder="例: ハイイエロー"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0F172A] border border-[#334155] text-white text-sm placeholder:text-slate-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              {/* ④ 性別 */}
+              <div>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">性別</label>
+                <div className="flex gap-3">
+                  {(['オス', 'メス', '不明'] as const).map((s) => {
+                    const display = s === 'オス' ? '♂' : s === 'メス' ? '♀' : '不明';
+                    const isActive = editSex === s;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setEditSex(s)}
+                        className={`flex-1 py-3 rounded-xl text-sm font-medium text-center transition-colors ${
+                          isActive
+                            ? 'bg-primary/20 border border-primary/50 text-primary'
+                            : 'bg-[#0F172A] border border-[#334155] text-slate-400'
+                        }`}
+                      >
+                        {display}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ⑤ 誕生日 */}
+              <div>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">誕生日</label>
+                <input
+                  type="date"
+                  value={editBirthday}
+                  onChange={(e) => setEditBirthday(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-[#0F172A] border border-[#334155] text-white text-sm focus:border-primary focus:outline-none [color-scheme:dark]"
+                />
+              </div>
+
+              {/* ⑥ ステータス */}
+              <div>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">ステータス</label>
+                <div className="flex gap-3">
+                  {(['飼育中', '売約済み', '譲渡済み'] as const).map((st) => {
+                    const isActive = editStatus === st;
+                    return (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setEditStatus(st)}
+                        className={`flex-1 py-3 rounded-xl text-sm font-medium text-center transition-colors ${
+                          isActive
+                            ? 'bg-primary/20 border border-primary/50 text-primary'
+                            : 'bg-[#0F172A] border border-[#334155] text-slate-400'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 保存ボタン */}
+            <div className="px-6 pb-6">
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editName.trim() || editSaving}
+                className="w-full py-4 rounded-xl bg-primary text-white text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editSaving ? '保存中...' : '保存する'}
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ═══ 削除確認モーダル ═══ */}
