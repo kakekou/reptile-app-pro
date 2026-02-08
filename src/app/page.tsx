@@ -1043,6 +1043,20 @@ export default function WeeklyCareMatrixPage() {
             </button>
           </div>
 
+          {/* フルページ入力リンク */}
+          {selectedId && (
+            <div className="px-5 pb-3">
+              <Link
+                href={`/record?individual_id=${selectedId}&date=${modalDate}`}
+                onClick={() => setModalOpen(false)}
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-white/10 bg-[#0F172A]/30 text-xs font-medium text-slate-400 hover:text-primary hover:border-primary/30 transition-colors"
+              >
+                フルページで入力
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
           {/* ローディング */}
           {modalLoading ? (
             <div className="px-5 py-12 flex items-center justify-center">
