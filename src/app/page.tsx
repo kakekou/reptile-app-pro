@@ -763,47 +763,90 @@ export default function WeeklyCareMatrixPage() {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 space-y-4 pb-6">
-        {/* ═══ B. 個体切り替えタブ ═══ */}
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-          {loading ? (
-            <>
-              <div className="h-10 animate-pulse bg-[#1E293B] rounded-full w-28" />
-              <div className="h-10 animate-pulse bg-[#1E293B] rounded-full w-28" />
-              <div className="h-10 animate-pulse bg-[#1E293B] rounded-full w-28" />
-            </>
-          ) : individuals.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              個体を登録してください →{" "}
-              <Link href="/individuals/new" className="text-primary font-medium hover:underline">
-                個体一覧
-              </Link>
-            </p>
-          ) : (
-            individuals.map((ind) => {
-              const isSelected = ind.id === selectedId;
-              const emoji = getSpeciesEmoji(ind.species);
-              return (
-                <button
-                  key={ind.id}
-                  onClick={() => setSelectedId(ind.id)}
-                  className={`
-                    flex items-center gap-1.5 px-5 py-2.5 rounded-full
-                    whitespace-nowrap transition-all
-                    ${
-                      isSelected
-                        ? "bg-primary/15 text-primary border border-primary font-bold shadow-lg shadow-primary/10"
-                        : "bg-[#1E293B]/50 text-slate-400 border border-white/5 font-medium"
-                    }
-                  `}
+      {/* ═══ B. 個体カルーセル ═══ */}
+      <div className="relative">
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-3 pl-6 pr-6 py-2">
+            {loading ? (
+              <>
+                <div className="min-w-[140px] h-[160px] animate-pulse bg-[#1E293B] rounded-2xl" />
+                <div className="min-w-[140px] h-[160px] animate-pulse bg-[#1E293B] rounded-2xl" />
+                <div className="min-w-[140px] h-[160px] animate-pulse bg-[#1E293B] rounded-2xl" />
+              </>
+            ) : individuals.length === 0 ? (
+              <div className="pl-2 py-8">
+                <p className="text-sm text-slate-500">
+                  個体を登録してください →{" "}
+                  <Link href="/individuals/new" className="text-primary font-medium hover:underline">
+                    個体一覧
+                  </Link>
+                </p>
+              </div>
+            ) : (
+              <>
+                {individuals.map((ind) => {
+                  const isSelected = ind.id === selectedId;
+                  return (
+                    <button
+                      key={ind.id}
+                      onClick={() => setSelectedId(ind.id)}
+                      className={`relative min-w-[140px] h-[160px] rounded-2xl p-4 flex flex-col justify-between cursor-pointer transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                        isSelected
+                          ? "bg-primary/[0.08] border border-primary/30 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]"
+                          : "opacity-60 scale-95 bg-[#0F172A]/60 border border-white/[0.03] hover:opacity-80"
+                      }`}
+                    >
+                      {/* グローエフェクト（アクティブ時のみ） */}
+                      {isSelected && (
+                        <div className="absolute -right-4 -top-4 w-16 h-16 bg-primary/20 rounded-full blur-xl pointer-events-none" />
+                      )}
+
+                      {/* 上部: アイコン + ドット */}
+                      <div className="flex items-start justify-between relative z-[1]">
+                        <div
+                          className={`w-10 h-10 rounded-full bg-gradient-to-br from-white/10 to-white/[0.02] border border-white/10 backdrop-blur-[4px] flex items-center justify-center ${
+                            isSelected ? "shadow-[0_0_8px_rgba(16,185,129,0.3)]" : ""
+                          }`}
+                        >
+                          <Bug className={`w-5 h-5 ${isSelected ? "text-primary" : "text-slate-400"}`} />
+                        </div>
+                        {isSelected && (
+                          <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
+                        )}
+                      </div>
+
+                      {/* 下部: 名前 + 種類 */}
+                      <div className="text-left relative z-[1]">
+                        <p className={`text-lg leading-tight ${isSelected ? "font-bold text-white" : "font-medium text-slate-400"}`}>
+                          {ind.name}
+                        </p>
+                        <p className={`text-[10px] font-medium tracking-wider mt-0.5 ${
+                          isSelected ? "text-primary/80" : "text-slate-400/60"
+                        }`}>
+                          {ind.species}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+                {/* 追加ボタン */}
+                <Link
+                  href="/individuals/new"
+                  className="min-w-[60px] h-[140px] flex items-center justify-center self-center"
                 >
-                  <span>{emoji}</span>
-                  <span>{ind.name}</span>
-                </button>
-              );
-            })
-          )}
+                  <div className="w-12 h-12 rounded-full border border-dashed border-white/20 flex items-center justify-center text-white/40 hover:text-white hover:border-white/40 transition-colors">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
+        {/* 右端フェードグラデーション */}
+        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0F172A] to-transparent pointer-events-none" />
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 space-y-4 pb-6">
 
         {/* ═══ Quick Stats (static mock) ═══ */}
         <div className="grid grid-cols-2 gap-3">
