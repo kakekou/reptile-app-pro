@@ -17,12 +17,14 @@ import {
   Scale,
   Ruler,
   Check,
+  ChevronDown,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 // ── 定数 ──────────────────────────────────────────────
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+const FEED_UNITS = ['mL', 'g', 'kg', '個', '本', '匹', 'なし'] as const;
 
 const CONDITION_OPTIONS = [
   { label: '好調', dbValue: '絶好調', icon: Smile },
@@ -89,7 +91,8 @@ function RecordPageContent() {
   // 給餌インライン入力
   const [foodType, setFoodType] = useState('');
   const [feedQuantity, setFeedQuantity] = useState('');
-  const [feedUnit, setFeedUnit] = useState<'個' | 'g'>('個');
+  const [feedUnit, setFeedUnit] = useState<string>('なし');
+  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
   const [supplements, setSupplements] = useState({ calcium: false, vitamin: false });
   const [refused, setRefused] = useState(false);
   const [foodHistory, setFoodHistory] = useState<string[]>([]);
@@ -277,11 +280,13 @@ function RecordPageContent() {
 
       // 0. 給餌 → feedings (INSERT only、既存はfeedingSummaryで管理)
       if (hasFeeding) {
-        const dustingVal = supplements.calcium && supplements.vitamin
-          ? 'calcium+vitamin'
-          : supplements.calcium ? 'calcium'
-          : supplements.vitamin ? 'vitamin'
-          : null;
+        const noteParts: string[] = [];
+        if (!refused) {
+          if (supplements.calcium && supplements.vitamin) noteParts.push('calcium+vitamin');
+          else if (supplements.calcium) noteParts.push('calcium');
+          else if (supplements.vitamin) noteParts.push('vitamin');
+          if (feedUnit !== 'なし') noteParts.push(`unit:${feedUnit}`);
+        }
         const fedAt = dateParam
           ? `${dateParam}T${new Date().toTimeString().slice(0, 8)}`
           : new Date().toISOString();
@@ -294,7 +299,7 @@ function RecordPageContent() {
             quantity: refused ? 0 : (feedQuantity ? parseFloat(feedQuantity) : 0),
             dusting: !refused && (supplements.calcium || supplements.vitamin),
             refused,
-            notes: !refused && dustingVal ? dustingVal : '',
+            notes: noteParts.join(','),
           }).select()
         );
       }
@@ -492,7 +497,7 @@ function RecordPageContent() {
                 })()}
               </div>
 
-              {/* 数量 + 単位切替 */}
+              {/* 数量 + 単位選択 */}
               <div className="flex gap-3 mt-3">
                 <input
                   type="number"
@@ -502,25 +507,33 @@ function RecordPageContent() {
                   placeholder="0"
                   className="flex-1 py-3 px-4 bg-[#1E293B] border border-[#334155] rounded-xl text-slate-100 placeholder:text-slate-600 focus:border-[#10B981] focus:ring-0 outline-none text-sm"
                 />
-                <div className="flex bg-[#1E293B] border border-[#334155] p-1 rounded-lg">
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setFeedUnit('個')}
-                    className={`px-3 py-1.5 text-xs rounded-md transition-all ${
-                      feedUnit === '個' ? 'bg-white/10 text-[#10B981] font-bold' : 'text-slate-400 font-medium'
-                    }`}
+                    onClick={() => setShowUnitDropdown(!showUnitDropdown)}
+                    className="flex items-center gap-2 px-3 py-3 rounded-xl bg-[#1E293B] border border-[#334155] text-sm whitespace-nowrap"
                   >
-                    個
+                    <span className="text-slate-400">単位:</span>
+                    <span className="text-white">{feedUnit}</span>
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setFeedUnit('g')}
-                    className={`px-3 py-1.5 text-xs rounded-md transition-all ${
-                      feedUnit === 'g' ? 'bg-white/10 text-[#10B981] font-bold' : 'text-slate-400 font-medium'
-                    }`}
-                  >
-                    g
-                  </button>
+                  {showUnitDropdown && (
+                    <div className="absolute top-full mt-1 right-0 min-w-full bg-[#1E293B] border border-[#334155] rounded-xl shadow-lg z-50 overflow-hidden">
+                      {FEED_UNITS.map((unit) => (
+                        <button
+                          key={unit}
+                          type="button"
+                          onClick={() => { setFeedUnit(unit); setShowUnitDropdown(false); }}
+                          className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                            feedUnit === unit ? 'bg-[#334155] text-white' : 'text-slate-300 hover:bg-[#334155]/50'
+                          }`}
+                        >
+                          {feedUnit === unit && <span className="mr-1">✓</span>}
+                          {unit}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

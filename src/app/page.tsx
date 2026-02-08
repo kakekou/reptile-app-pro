@@ -3,6 +3,7 @@
 import { useState, useEffect, Fragment } from "react";
 import Link from "next/link";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Settings,
@@ -118,6 +119,7 @@ const CARE_ITEMS: CareItem[] = [
 ];
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+const FEED_UNITS = ["mL", "g", "kg", "個", "本", "匹", "なし"] as const;
 
 const CONDITION_LEVELS = [
   { value: "絶好調", label: "好調", icon: Smile, color: "text-emerald-400", border: "border-emerald-500/50", bg: "bg-emerald-500/15", ring: "ring-emerald-500/30" },
@@ -347,7 +349,8 @@ export default function WeeklyCareMatrixPage() {
   const [feedingInputs, setFeedingInputs] = useState<FeedingInput[]>([]);
   const [foodType, setFoodType] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [feedUnit, setFeedUnit] = useState<"個" | "g">("個");
+  const [feedUnit, setFeedUnit] = useState<string>("なし");
+  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
   const [supplements, setSupplements] = useState<{ calcium: boolean; vitamin: boolean }>({ calcium: false, vitamin: false });
   const [refused, setRefused] = useState(false);
   const [foodSuggestions, setFoodSuggestions] = useState<string[]>([]);
@@ -387,7 +390,8 @@ export default function WeeklyCareMatrixPage() {
     setFeedingInputs([]);
     setFoodType("");
     setQuantity("");
-    setFeedUnit("個");
+    setFeedUnit("なし");
+    setShowUnitDropdown(false);
     setSupplements({ calcium: false, vitamin: false });
     setRefused(false);
     setShowSuggestions(false);
@@ -536,7 +540,6 @@ export default function WeeklyCareMatrixPage() {
 
       // 2. 給餌 → feedings
       if (refused) {
-        // 拒食記録
         ops.push(
           supabase.from('feedings').insert({
             user_id: userId,
@@ -546,12 +549,16 @@ export default function WeeklyCareMatrixPage() {
             quantity: 0,
             refused: true,
             dusting: false,
+            notes: '',
           }).select().then(r => r)
         );
       } else if (foodType.trim()) {
-        // 通常給餌
-        const dustingValue = supplements.calcium && supplements.vitamin
-          ? true : supplements.calcium ? true : supplements.vitamin ? true : false;
+        const dustingValue = supplements.calcium || supplements.vitamin;
+        const noteParts: string[] = [];
+        if (supplements.calcium && supplements.vitamin) noteParts.push('calcium+vitamin');
+        else if (supplements.calcium) noteParts.push('calcium');
+        else if (supplements.vitamin) noteParts.push('vitamin');
+        if (feedUnit !== 'なし') noteParts.push(`unit:${feedUnit}`);
         ops.push(
           supabase.from('feedings').insert({
             user_id: userId,
@@ -561,6 +568,7 @@ export default function WeeklyCareMatrixPage() {
             quantity: quantity ? Number(quantity) : 0,
             refused: false,
             dusting: dustingValue,
+            notes: noteParts.join(','),
           }).select().then(r => r)
         );
       }
@@ -1198,7 +1206,7 @@ export default function WeeklyCareMatrixPage() {
                     )}
                   </div>
 
-                  {/* c) 数量 + 単位切替 */}
+                  {/* c) 数量 + 単位選択 */}
                   <div className="mt-3 flex gap-3">
                     <input
                       type="number"
@@ -1208,21 +1216,33 @@ export default function WeeklyCareMatrixPage() {
                       placeholder="0"
                       className="flex-1 py-3 px-4 bg-[#1E293B] border border-[#334155] rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-primary/50"
                     />
-                    <div className="bg-[#1E293B] border border-[#334155] p-1 rounded-lg flex">
-                      {(["個", "g"] as const).map((u) => (
-                        <button
-                          key={u}
-                          type="button"
-                          onClick={() => setFeedUnit(u)}
-                          className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${
-                            feedUnit === u
-                              ? "bg-white/10 text-primary"
-                              : "text-slate-500"
-                          }`}
-                        >
-                          {u}
-                        </button>
-                      ))}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowUnitDropdown(!showUnitDropdown)}
+                        className="flex items-center gap-2 px-3 py-3 rounded-xl bg-[#1E293B] border border-[#334155] text-sm whitespace-nowrap"
+                      >
+                        <span className="text-slate-400">単位:</span>
+                        <span className="text-white">{feedUnit}</span>
+                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                      </button>
+                      {showUnitDropdown && (
+                        <div className="absolute top-full mt-1 right-0 min-w-full bg-[#1E293B] border border-[#334155] rounded-xl shadow-lg z-50 overflow-hidden">
+                          {FEED_UNITS.map((unit) => (
+                            <button
+                              key={unit}
+                              type="button"
+                              onClick={() => { setFeedUnit(unit); setShowUnitDropdown(false); }}
+                              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                                feedUnit === unit ? "bg-[#334155] text-white" : "text-slate-300 hover:bg-[#334155]/50"
+                              }`}
+                            >
+                              {feedUnit === unit && <span className="mr-1">✓</span>}
+                              {unit}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
