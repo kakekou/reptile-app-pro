@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ListChecks, Heart, ClipboardList } from 'lucide-react';
+import { Home, PawPrint, ClipboardList, Heart, Plus } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/',             icon: LayoutDashboard, label: 'ホーム' },
-  { href: '/individuals',  icon: ListChecks,      label: '個体' },
-  { href: '/management',   icon: ClipboardList,   label: '管理' },
-  { href: '/breeding',     icon: Heart,           label: '繁殖' },
+  { href: '/',             icon: Home,          label: 'ホーム' },
+  { href: '/individuals',  icon: PawPrint,      label: '個体' },
+  { href: '/management',   icon: ClipboardList, label: '管理' },
+  { href: '/breeding',     icon: Heart,         label: '繁殖' },
 ] as const;
 
 export function BottomNav() {
@@ -18,29 +18,44 @@ export function BottomNav() {
   if (pathname === '/login' || pathname.startsWith('/auth')) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white/80 backdrop-blur-xl safe-bottom">
-      <div className="mx-auto flex max-w-lg items-center justify-around px-2 pt-2 pb-1">
-        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
-          const isActive =
-            href === '/'
-              ? pathname === '/'
-              : pathname.startsWith(href);
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-bottom">
+      <div className="relative mx-auto max-w-lg">
+        {/* 中央の+ボタン */}
+        <div className="absolute left-1/2 -translate-x-1/2 -top-5">
+          <Link
+            href="/"
+            className="w-12 h-12 bg-primary rounded-full shadow-lg shadow-primary/40 flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
+          </Link>
+        </div>
 
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium transition-colors ${
-                isActive
-                  ? 'text-accent-blue'
-                  : 'text-text-tertiary'
-              }`}
-            >
-              <Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+        {/* ナビアイテム */}
+        <div className="flex items-center justify-around px-2 pt-2 pb-1">
+          {NAV_ITEMS.map(({ href, icon: Icon, label }, index) => {
+            const isActive =
+              href === '/'
+                ? pathname === '/'
+                : pathname.startsWith(href);
+
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium transition-colors ${
+                  index === 1 ? 'mr-6' : index === 2 ? 'ml-6' : ''
+                } ${
+                  isActive
+                    ? 'text-primary'
+                    : 'text-gray-400'
+                }`}
+              >
+                <Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

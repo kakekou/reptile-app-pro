@@ -52,6 +52,8 @@
   --color-accent-orange: var(--accent-orange);
   --color-accent-purple: var(--accent-purple);
   --color-accent-teal: var(--accent-teal);
+  --color-primary: #10b77f;
+  --color-primary-light: #e0f2ec;
   --color-border: var(--border-color);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

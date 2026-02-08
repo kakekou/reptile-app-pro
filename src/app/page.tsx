@@ -1,24 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
+import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
-  HeartPulse,
-  Circle,
+  Settings,
+  Utensils,
   Droplets,
-  Paintbrush,
-  Waves,
-  Grab,
-  GlassWater,
+  Trash2,
+  Layers,
+  Scale,
+  Heart,
+  Hand,
   Pill,
-  Stethoscope,
   HeartHandshake,
   Egg,
-  Sparkles,
-  Weight,
-  StickyNote,
+  FileText,
   Camera,
+  GlassWater,
   Bug,
   Locate,
   Worm,
@@ -29,6 +29,9 @@ import {
   X,
   Minus,
   Check,
+  Bath,
+  Hospital,
+  Brush,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -57,6 +60,7 @@ interface CareItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  bg: string;
 }
 
 interface IndividualTab {
@@ -84,36 +88,25 @@ interface FeedingInput {
 // ── 定数 ──────────────────────────────────────────────
 
 const CARE_ITEMS: CareItem[] = [
-  { type: "condition",    label: "体調",       icon: HeartPulse,     color: "text-rose-500" },
-  { type: "feeding",      label: "給餌",       icon: () => null,     color: "text-amber-600" },
-  { type: "poop",         label: "排泄",       icon: Circle,         color: "text-amber-800" },
-  { type: "urine",        label: "尿",         icon: Droplets,       color: "text-yellow-500" },
-  { type: "cleaning",     label: "掃除",       icon: Paintbrush,     color: "text-sky-500" },
-  { type: "bathing",      label: "温浴",       icon: Waves,          color: "text-cyan-500" },
-  { type: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Grab,           color: "text-orange-500" },
-  { type: "water_change", label: "水替え",     icon: GlassWater,     color: "text-blue-500" },
-  { type: "medication",   label: "投薬",       icon: Pill,           color: "text-red-500" },
-  { type: "hospital",     label: "通院",       icon: Stethoscope,    color: "text-red-600" },
-  { type: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500" },
-  { type: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-amber-500" },
-  { type: "shedding",     label: "脱皮",       icon: Sparkles,       color: "text-purple-500" },
-  { type: "weight",       label: "体重",       icon: Weight,         color: "text-emerald-500" },
-  { type: "memo",         label: "メモ",       icon: StickyNote,     color: "text-blue-400" },
-  { type: "photo",        label: "写真",       icon: Camera,         color: "text-indigo-400" },
+  { type: "feeding",      label: "給餌",       icon: Utensils,       color: "text-orange-500",  bg: "bg-orange-50" },
+  { type: "water_change", label: "水替",       icon: Droplets,       color: "text-blue-500",    bg: "bg-blue-50" },
+  { type: "poop",         label: "排泄",       icon: Trash2,         color: "text-amber-600",   bg: "bg-amber-50" },
+  { type: "shedding",     label: "脱皮",       icon: Layers,         color: "text-purple-500",  bg: "bg-purple-50" },
+  { type: "cleaning",     label: "掃除",       icon: Brush,          color: "text-teal-500",    bg: "bg-teal-50" },
+  { type: "weight",       label: "体重",       icon: Scale,          color: "text-slate-500",   bg: "bg-slate-100" },
+  { type: "bathing",      label: "温浴",       icon: Bath,           color: "text-red-500",     bg: "bg-red-50" },
+  { type: "condition",    label: "体調",       icon: Heart,          color: "text-rose-500",    bg: "bg-rose-50" },
+  { type: "urine",        label: "尿酸",       icon: GlassWater,     color: "text-yellow-500",  bg: "bg-yellow-50" },
+  { type: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Hand,           color: "text-fuchsia-500", bg: "bg-fuchsia-50" },
+  { type: "medication",   label: "投薬",       icon: Pill,           color: "text-red-600",     bg: "bg-red-50" },
+  { type: "hospital",     label: "通院",       icon: Hospital,       color: "text-rose-600",    bg: "bg-rose-50" },
+  { type: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",    bg: "bg-pink-50" },
+  { type: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-yellow-600",  bg: "bg-yellow-50" },
+  { type: "memo",         label: "メモ",       icon: FileText,       color: "text-gray-500",    bg: "bg-gray-50" },
+  { type: "photo",        label: "写真",       icon: Camera,         color: "text-sky-500",     bg: "bg-sky-50" },
 ];
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
-
-const FOOD_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
-  "コオロギ":     { icon: Bug,          color: "text-amber-700" },
-  "デュビア":     { icon: Locate,       color: "text-red-700" },
-  "ミルワーム":   { icon: Worm,         color: "text-yellow-600" },
-  "ピンクマウス": { icon: Mouse,        color: "text-pink-500" },
-  "ヒヨコ":       { icon: Bird,         color: "text-orange-400" },
-  "卵":           { icon: Egg,          color: "text-amber-400" },
-  "人工フード":   { icon: FlaskConical, color: "text-blue-600" },
-  "その他":       { icon: Plus,         color: "text-gray-500" },
-};
 
 const CONDITION_LEVELS = [
   { value: "絶好調", label: "好調", emoji: "😊", color: "text-emerald-500", border: "border-emerald-400", bg: "bg-emerald-50", ring: "ring-emerald-200" },
@@ -133,11 +126,6 @@ function mapConditionValue(raw: string | null | undefined): string | null {
   return CONDITION_MAP[raw] ?? null;
 }
 
-function getConditionLevel(value: string | null | undefined) {
-  const mapped = mapConditionValue(value);
-  return CONDITION_LEVELS.find((c) => c.value === mapped) ?? CONDITION_LEVELS[1];
-}
-
 const FOOD_OPTIONS = [
   { key: "コオロギ",     icon: Bug,          color: "text-amber-700",  bg: "bg-amber-50" },
   { key: "デュビア",     icon: Locate,       color: "text-red-700",    bg: "bg-red-50" },
@@ -150,14 +138,14 @@ const FOOD_OPTIONS = [
 ];
 
 const CARE_TOGGLE_ITEMS = [
-  { key: "cleaning",     label: "掃除",       icon: Paintbrush,     color: "text-sky-500",    bg: "bg-sky-50" },
-  { key: "bathing",      label: "温浴",       icon: Waves,          color: "text-cyan-500",   bg: "bg-cyan-50" },
-  { key: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Grab,           color: "text-orange-500", bg: "bg-orange-50" },
-  { key: "water_change", label: "水替え",     icon: GlassWater,     color: "text-blue-500",   bg: "bg-blue-50" },
-  { key: "medication",   label: "投薬",       icon: Pill,           color: "text-red-500",    bg: "bg-red-50" },
-  { key: "hospital",     label: "通院",       icon: Stethoscope,    color: "text-red-600",    bg: "bg-red-50" },
-  { key: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",   bg: "bg-pink-50" },
-  { key: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-amber-500",  bg: "bg-amber-50" },
+  { key: "cleaning",     label: "掃除",       icon: Brush,          color: "text-teal-500",    bg: "bg-teal-50" },
+  { key: "bathing",      label: "温浴",       icon: Bath,           color: "text-red-500",     bg: "bg-red-50" },
+  { key: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Hand,           color: "text-fuchsia-500", bg: "bg-fuchsia-50" },
+  { key: "water_change", label: "水替え",     icon: Droplets,       color: "text-blue-500",    bg: "bg-blue-50" },
+  { key: "medication",   label: "投薬",       icon: Pill,           color: "text-red-600",     bg: "bg-red-50" },
+  { key: "hospital",     label: "通院",       icon: Hospital,       color: "text-rose-600",    bg: "bg-rose-50" },
+  { key: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",    bg: "bg-pink-50" },
+  { key: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-yellow-600",  bg: "bg-yellow-50" },
 ];
 
 // ── ユーティリティ関数 ─────────────────────────────────
@@ -262,6 +250,11 @@ function formatModalDate(dateStr: string): string {
   return `${m}月${d}日(${WEEKDAYS[date.getDay()]})`;
 }
 
+function getSpeciesEmoji(species: string): string {
+  if (species.includes("ヘビ")) return "🐍";
+  return "🦎";
+}
+
 // ── イベント正規化（共通） ──────────────────────────────
 
 function normalizeEvents(
@@ -307,78 +300,21 @@ function normalizeEvents(
   return [...feedEvents, ...shedEvents, ...measEvents, ...healthEvents, ...careLogEvents];
 }
 
-// ── セル描画（週表示用） ──────────────────────────────
+// ── 月表示用ドット描画 ──────────────────────────────
 
-function renderCellContent(care: CareItem, dayEvents: CareEvent[]) {
-  if (dayEvents.length === 0) return null;
-
-  const Icon = care.icon;
-
-  switch (care.type) {
-    case "feeding":
-      return (
-        <div className="flex items-center justify-center gap-0.5 flex-wrap">
-          {dayEvents.map((f, i) => {
-            const fi = FOOD_ICONS[f.foodType ?? ""] ?? { icon: Plus, color: "text-gray-400" };
-            const IconComp = fi.icon;
-            return (
-              <div key={i} className="relative">
-                <IconComp className={`w-4 h-4 ${fi.color}`} />
-                {f.dusting && (
-                  <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      );
-
-    case "condition": {
-      const cl = getConditionLevel(dayEvents[0].condition);
-      return <span className="text-lg leading-none">{cl.emoji}</span>;
-    }
-
-    case "weight": {
-      const w = dayEvents[0].weight_g;
-      if (w != null && w > 0) {
-        return <span className="text-[11px] font-bold text-emerald-600">{w}</span>;
-      }
-      return <Icon className={`w-5 h-5 ${care.color}`} />;
-    }
-
-    default:
-      return <Icon className={`w-5 h-5 ${care.color}`} />;
-  }
-}
-
-// ── セル描画（月表示用） ──────────────────────────────
-
-function renderMonthCellIcons(dayEvents: CareEvent[]) {
+function renderMonthCellDots(dayEvents: CareEvent[]) {
   if (dayEvents.length === 0) return null;
 
   const uniqueTypes = CARE_ITEMS
     .filter((care) => dayEvents.some((e) => e.type === care.type))
     .slice(0, 5);
 
-  return uniqueTypes.map((care) => {
-    if (care.type === "feeding") {
-      const feedEvent = dayEvents.find((e) => e.type === "feeding");
-      const fi = FOOD_ICONS[feedEvent?.foodType ?? ""];
-      if (fi) {
-        const IconComp = fi.icon;
-        return <IconComp key={care.type} className={`w-4 h-4 ${fi.color}`} />;
-      }
-      return <Bug key={care.type} className="w-4 h-4 text-amber-600" />;
-    }
-
-    if (care.type === "condition") {
-      const condEvent = dayEvents.find((e) => e.type === "condition");
-      const cl = getConditionLevel(condEvent?.condition);
-      return <span key={care.type} className="text-sm leading-none">{cl.emoji}</span>;
-    }
-
-    return <care.icon key={care.type} className={`w-4 h-4 ${care.color}`} />;
-  });
+  return uniqueTypes.map((care) => (
+    <div
+      key={care.type}
+      className={`w-1.5 h-1.5 rounded-full ${care.color.replace("text-", "bg-")}`}
+    />
+  ));
 }
 
 // ── ページコンポーネント ───────────────────────────────
@@ -736,190 +672,207 @@ export default function WeeklyCareMatrixPage() {
 
       setEvents(normalizeEvents(feedRes.data, shedRes.data, measRes.data, healthRes.data, careRes.data));
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, selectedId, monthOffset, refetchCount]);
 
   return (
     <>
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-        {/* A. ヘッダー */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">ReptiLog</h1>
-          <p className="text-sm text-gray-500">{todayDisplay}</p>
+    <div className="bg-[#f8f8fa] min-h-screen">
+      {/* ═══ A. ヘッダー ═══ */}
+      <header className="sticky top-0 z-10 bg-[#f8f8fa]/80 backdrop-blur">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              ReptiLog 🦎
+            </h1>
+            <p className="text-sm text-primary">{todayDisplay}</p>
+          </div>
+          <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+            <Settings className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
+      </header>
 
-        {/* B. 個体切り替えタブ */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="max-w-2xl mx-auto px-4 space-y-4 pb-6">
+        {/* ═══ B. 個体切り替えタブ ═══ */}
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
           {loading ? (
             <>
-              <div className="h-9 animate-pulse bg-gray-100 rounded-full w-24" />
-              <div className="h-9 animate-pulse bg-gray-100 rounded-full w-24" />
-              <div className="h-9 animate-pulse bg-gray-100 rounded-full w-24" />
+              <div className="h-10 animate-pulse bg-gray-100 rounded-full w-28" />
+              <div className="h-10 animate-pulse bg-gray-100 rounded-full w-28" />
+              <div className="h-10 animate-pulse bg-gray-100 rounded-full w-28" />
             </>
           ) : individuals.length === 0 ? (
             <p className="text-sm text-gray-400">
               個体を登録してください →{" "}
-              <a href="/individuals/new" className="text-blue-600 font-medium hover:underline">
+              <Link href="/individuals/new" className="text-primary font-medium hover:underline">
                 個体一覧
-              </a>
+              </Link>
             </p>
           ) : (
-            individuals.map((ind) => (
-              <button
-                key={ind.id}
-                onClick={() => setSelectedId(ind.id)}
-                className={`
-                  px-4 py-1.5 rounded-full text-sm font-medium
-                  whitespace-nowrap transition-colors
-                  ${
-                    ind.id === selectedId
-                      ? "bg-gray-900 text-white"
-                      : "bg-white text-gray-500 border border-gray-200 hover:border-gray-400"
-                  }
-                `}
-              >
-                {ind.name}
-              </button>
-            ))
+            individuals.map((ind) => {
+              const isSelected = ind.id === selectedId;
+              const emoji = getSpeciesEmoji(ind.species);
+              return (
+                <button
+                  key={ind.id}
+                  onClick={() => setSelectedId(ind.id)}
+                  className={`
+                    flex items-center gap-1.5 px-5 py-2.5 rounded-full
+                    whitespace-nowrap transition-all
+                    ${
+                      isSelected
+                        ? "bg-primary text-white shadow-lg shadow-primary/30 font-bold"
+                        : "bg-white text-gray-500 border border-gray-100 font-medium"
+                    }
+                  `}
+                >
+                  <span>{emoji}</span>
+                  <span>{ind.name}</span>
+                </button>
+              );
+            })
           )}
         </div>
 
-        {/* C. マトリクスカード */}
+        {/* ═══ C. 週/月トグル ═══ */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">
+              {viewMode === "week" ? "ウィークリー" : "マンスリー"}
+            </h2>
+            <span className="text-sm text-gray-400">
+              {viewMode === "week"
+                ? `${today.getMonth() + 1}月`
+                : `${displayYear}年 ${displayMonth}月`}
+            </span>
+          </div>
+          <div className="bg-gray-200 p-1 rounded-lg flex">
+            <button
+              onClick={() => setViewMode("week")}
+              className={`px-4 py-1 text-xs rounded transition-all ${
+                viewMode === "week"
+                  ? "bg-white text-gray-900 shadow-sm font-semibold"
+                  : "text-gray-500 font-medium"
+              }`}
+            >
+              週
+            </button>
+            <button
+              onClick={() => setViewMode("month")}
+              className={`px-4 py-1 text-xs rounded transition-all ${
+                viewMode === "month"
+                  ? "bg-white text-gray-900 shadow-sm font-semibold"
+                  : "text-gray-500 font-medium"
+              }`}
+            >
+              月
+            </button>
+          </div>
+        </div>
+
+        {/* ═══ D. マトリクス / カレンダー ═══ */}
         {loading ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-2">
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 p-4 space-y-2">
             {[...Array(7)].map((_, i) => (
               <div key={i} className="h-8 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : individuals.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 p-8 text-center">
             <p className="text-gray-400 text-sm">個体が登録されていません</p>
-            <a
+            <Link
               href="/individuals/new"
-              className="text-blue-600 text-sm font-medium mt-2 inline-block hover:underline"
+              className="text-primary text-sm font-medium mt-2 inline-block hover:underline"
             >
               ＋ 個体を登録する
-            </a>
+            </Link>
           </div>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* C-1. ナビゲーション */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              {viewMode === "week" ? (
-                <>
+        ) : viewMode === "week" ? (
+          /* ─── D-1. 週間マトリクスカード ─── */
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] p-4 border border-gray-100">
+            {/* ナビゲーション */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setWeekOffset((w) => w - 1)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-600">
+                  第{weekNumber}週
+                </span>
+                {weekOffset !== 0 && (
                   <button
-                    onClick={() => setWeekOffset((w) => w - 1)}
-                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                    onClick={() => setWeekOffset(0)}
+                    className="text-xs text-primary font-medium px-2 py-0.5 rounded-md hover:bg-primary/10 transition-colors"
                   >
-                    <ChevronLeft className="w-4 h-4" />
-                    <span>前週</span>
+                    今日
                   </button>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">
-                      第{weekNumber}週
-                    </span>
-                    {weekOffset !== 0 && (
-                      <button
-                        onClick={() => setWeekOffset(0)}
-                        className="text-xs text-blue-600 font-medium px-2 py-0.5 rounded-md hover:bg-blue-50 transition-colors"
-                      >
-                        今日
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setWeekOffset((w) => w + 1)}
-                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <span>次週</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setMonthOffset((m) => m - 1)}
-                    className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-gray-800">
-                      {displayYear}年 {displayMonth}月
-                    </span>
-                    {monthOffset !== 0 && (
-                      <button
-                        onClick={() => setMonthOffset(0)}
-                        className="text-xs text-blue-600 font-medium px-2 py-0.5 rounded-md hover:bg-blue-50 transition-colors"
-                      >
-                        今日
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setMonthOffset((m) => m + 1)}
-                    className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* 週/月 切り替えボタン */}
-            <div className="flex justify-end px-4 py-2">
-              <div className="flex bg-gray-100 rounded-lg p-0.5">
-                <button
-                  onClick={() => setViewMode("week")}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors
-                    ${viewMode === "week" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500"}`}
-                >
-                  週
-                </button>
-                <button
-                  onClick={() => setViewMode("month")}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors
-                    ${viewMode === "month" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500"}`}
-                >
-                  月
-                </button>
+                )}
               </div>
+              <button
+                onClick={() => setWeekOffset((w) => w + 1)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
-            {viewMode === "week" ? (
-              /* C-2. 週間グリッド本体 */
-              <div>
-                {/* 曜日ヘッダー行 */}
-                <div className="grid border-b-2 border-gray-200" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
-                  <div className="py-2 px-1" />
-                  {weekDates.map((date) => {
-                    const { day, weekday } = formatDate(date);
-                    const isToday = date === todayString;
-                    const dayIndex = new Date(date + 'T00:00:00').getDay();
-                    return (
-                      <div key={date} className="py-2 text-center">
-                        <div className={`text-xs font-medium ${dayIndex === 0 ? 'text-red-400' : dayIndex === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
-                          {weekday}
-                        </div>
-                        {isToday ? (
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-base font-bold">
-                            {day}
-                          </span>
-                        ) : (
-                          <div className="text-base font-bold text-gray-800">{day}</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* 週間グリッド */}
+            <div className="grid grid-cols-[48px_repeat(7,1fr)] gap-y-5 gap-x-1">
+              {/* 曜日ヘッダー行 */}
+              <div /> {/* 左上の空セル */}
+              {weekDates.map((date) => {
+                const { day, weekday } = formatDate(date);
+                const isToday = date === todayString;
+                const dayIndex = new Date(date + "T00:00:00").getDay();
+                return (
+                  <div
+                    key={date}
+                    className={`flex flex-col items-center gap-0.5 py-1 ${
+                      isToday ? "bg-primary/10 rounded-t-xl" : ""
+                    }`}
+                  >
+                    <span
+                      className={`text-[10px] uppercase font-bold ${
+                        dayIndex === 0 ? "text-primary" : "text-gray-400"
+                      }`}
+                    >
+                      {weekday}
+                    </span>
+                    {isToday ? (
+                      <span className="w-6 h-6 flex items-center justify-center bg-primary text-white rounded-full text-xs font-semibold">
+                        {day}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-gray-700">
+                        {day}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
 
-                {/* ケア項目行 */}
-                {CARE_ITEMS.map((care) => (
-                  <div key={care.type} className="grid border-b border-gray-200" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
-                    <div className="py-3 px-1 flex items-center border-r border-gray-200">
-                      <span className="text-xs text-gray-500 font-medium truncate">{care.label}</span>
+              {/* ケア項目行 */}
+              {CARE_ITEMS.map((care, careIndex) => {
+                const Icon = care.icon;
+                const isLastRow = careIndex === CARE_ITEMS.length - 1;
+                return (
+                  <Fragment key={care.type}>
+                    {/* ラベルセル */}
+                    <div className="flex flex-col items-center justify-center gap-0.5">
+                      <div
+                        className={`w-7 h-7 rounded-full ${care.bg} flex items-center justify-center`}
+                      >
+                        <Icon className={`w-[15px] h-[15px] ${care.color}`} />
+                      </div>
+                      <span className="text-[9px] font-medium text-[#64748b] leading-tight">
+                        {care.label}
+                      </span>
                     </div>
+
+                    {/* 7つのデータセル */}
                     {weekDates.map((date) => {
                       const isToday = date === todayString;
                       const dayEvents = events.filter(
@@ -930,118 +883,204 @@ export default function WeeklyCareMatrixPage() {
                           key={date}
                           type="button"
                           onClick={() => openModal(date)}
-                          className={`py-2 px-0.5 flex items-center justify-center border-r border-gray-100
-                            min-h-[44px] touch-manipulation active:bg-blue-50
-                            ${isToday ? 'bg-blue-50/40' : 'hover:bg-gray-50'}`}
+                          className={`h-8 flex items-center justify-center touch-manipulation ${
+                            isToday
+                              ? `bg-primary/10 ${isLastRow ? "rounded-b-xl" : ""}`
+                              : ""
+                          }`}
                         >
-                          {renderCellContent(care, dayEvents)}
+                          {dayEvents.length > 0 ? (
+                            <div className="w-2 h-2 bg-primary rounded-full" />
+                          ) : isToday ? (
+                            <div className="w-2 h-2 bg-gray-200 rounded-full" />
+                          ) : null}
                         </button>
                       );
                     })}
-                  </div>
-                ))}
+                  </Fragment>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          /* ─── D-2. 月間カレンダー ─── */
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] p-4 border border-gray-100">
+            {/* ナビゲーション */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setMonthOffset((m) => m - 1)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-gray-800">
+                  {displayYear}年 {displayMonth}月
+                </span>
+                {monthOffset !== 0 && (
+                  <button
+                    onClick={() => setMonthOffset(0)}
+                    className="text-xs text-primary font-medium px-2 py-0.5 rounded-md hover:bg-primary/10 transition-colors"
+                  >
+                    今日
+                  </button>
+                )}
               </div>
-            ) : (
-              /* C-3. 月間カレンダーグリッド */
-              <div className="p-2">
-                {/* 曜日ヘッダー */}
-                <div className="grid grid-cols-7 mb-1">
-                  {WEEKDAYS.map((d) => (
-                    <div key={d} className="text-center text-xs font-medium text-gray-400 py-1">
-                      {d}
-                    </div>
-                  ))}
+              <button
+                onClick={() => setMonthOffset((m) => m + 1)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 曜日ヘッダー */}
+            <div className="grid grid-cols-7 mb-2">
+              {WEEKDAYS.map((d) => (
+                <div
+                  key={d}
+                  className="text-center text-xs font-semibold text-gray-400"
+                >
+                  {d}
                 </div>
+              ))}
+            </div>
 
-                {/* 週ごとの行 */}
-                {monthCalendarDates.map((week, wi) => (
-                  <div key={wi} className="grid grid-cols-7">
-                    {week.map((date, di) => {
-                      if (!date) {
-                        return <div key={di} className="border border-gray-100 min-h-[88px]" />;
-                      }
+            {/* カレンダーグリッド */}
+            <div className="grid grid-cols-7 gap-1">
+              {monthCalendarDates.flat().map((date, i) => {
+                if (!date) {
+                  return <div key={i} className="h-16" />;
+                }
 
-                      const isToday = date === todayString;
-                      const dayNum = new Date(date + "T00:00:00").getDate();
-                      const dayEvents = events.filter((e) => e.date === date);
+                const isToday = date === todayString;
+                const dayNum = new Date(date + "T00:00:00").getDate();
+                const dayEvents = events.filter((e) => e.date === date);
 
-                      return (
-                        <button
-                          type="button"
-                          key={di}
-                          onClick={() => openModal(date)}
-                          className={`border border-gray-200 min-h-[88px] p-1 text-left touch-manipulation active:bg-blue-50
-                            ${isToday ? 'bg-blue-50/40' : 'hover:bg-gray-50'}`}
-                        >
-                          <div className="flex justify-end mb-0.5">
-                            {isToday ? (
-                              <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold inline-flex items-center justify-center">
-                                {dayNum}
-                              </span>
-                            ) : (
-                              <span
-                                className={`text-sm font-medium ${
-                                  di === 0 ? "text-red-400" : di === 6 ? "text-blue-400" : "text-gray-700"
-                                }`}
-                              >
-                                {dayNum}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap gap-1">
-                            {renderMonthCellIcons(dayEvents)}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
+                return (
+                  <button
+                    type="button"
+                    key={i}
+                    onClick={() => openModal(date)}
+                    className={`h-16 rounded-xl p-1 flex flex-col items-center touch-manipulation transition-colors ${
+                      isToday
+                        ? "bg-primary/10 border-2 border-primary"
+                        : "bg-white border border-gray-100 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span
+                      className={`text-xs ${
+                        isToday
+                          ? "text-primary font-bold"
+                          : "font-medium text-gray-700"
+                      }`}
+                    >
+                      {dayNum}
+                    </span>
+                    <div className="flex flex-wrap gap-0.5 mt-0.5 justify-center">
+                      {renderMonthCellDots(dayEvents)}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
+
+        {/* ═══ E. 今日のタスク（静的モック） ═══ */}
+        <div>
+          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+            今日のタスク
+          </h3>
+          <div className="space-y-2">
+            <div className="bg-white p-4 rounded-xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
+                  <Utensils className="w-5 h-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">給餌</p>
+                  <p className="text-xs text-gray-400">18:00 予定</p>
+                </div>
+              </div>
+              <div className="w-5 h-5 rounded border-2 border-gray-200" />
+            </div>
+
+            <div className="bg-white p-4 rounded-xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Droplets className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">水替え</p>
+                  <p className="text-xs text-gray-400">朝のルーティン</p>
+                </div>
+              </div>
+              <div className="w-5 h-5 rounded border-2 border-gray-200" />
+            </div>
+
+            <div className="bg-white p-4 rounded-xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Scale className="w-5 h-5 text-slate-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">体重測定</p>
+                  <p className="text-xs text-gray-400">週1回の計測日</p>
+                </div>
+              </div>
+              <div className="w-5 h-5 rounded border-2 border-gray-200" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    {/* ── モーダル（ボトムシート）── ページの外側に配置 */}
+    {/* ═══ モーダル（ボトムシート） ═══ */}
     {modalOpen && (
       <>
         {/* 背景オーバーレイ */}
         <div
-          className="fixed inset-0 bg-black/30"
-          style={{ zIndex: 9998 }}
+          className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-[9998]"
           onClick={() => setModalOpen(false)}
         />
 
         {/* シート本体 */}
         <div
-          className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-xl animate-slide-up"
-          style={{ zIndex: 9999, maxHeight: "90vh", overflowY: "auto" }}
+          className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] shadow-[0_-8px_40px_rgba(0,0,0,0.15)] animate-slide-up z-[9999] max-h-[90vh] overflow-y-auto"
         >
-            {/* ヘッダー */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
-              <button type="button" onClick={() => setModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-              <h2 className="text-base font-bold text-gray-900">
-                {formatModalDate(modalDate)}
-              </h2>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-full disabled:opacity-50"
-              >
-                {saving ? "保存中…" : "保存"}
-              </button>
-            </div>
+          {/* ドラッグハンドル */}
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-12 h-1.5 rounded-full bg-gray-300" />
+          </div>
 
-            {/* スクロールエリア */}
+          {/* ヘッダー */}
+          <div className="flex items-center justify-between px-5 pb-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">記録の追加</h2>
+              <p className="text-sm text-gray-500">{formatModalDate(modalDate)}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* ローディング */}
+          {modalLoading ? (
+            <div className="px-5 py-12 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            /* スクロールエリア */
             <div className="px-5 py-4 space-y-6">
 
               {/* 1. 体調 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-2">体調</h3>
+                <h3 className="text-sm font-bold text-gray-700 mb-3">体調</h3>
                 <div className="flex gap-3 justify-center">
                   {CONDITION_LEVELS.map((c) => {
                     const isSelected = conditionInput === c.value;
@@ -1066,7 +1105,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 2. 給餌 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-2">給餌</h3>
+                <h3 className="text-sm font-bold text-gray-700 mb-3">給餌</h3>
 
                 {/* 餌の種類アイコングリッド */}
                 <div className="grid grid-cols-4 gap-2 mb-3">
@@ -1086,8 +1125,8 @@ export default function WeeklyCareMatrixPage() {
                             return [...prev, { foodType: food.key, quantity: 1, dusting: false, refused: false }];
                           });
                         }}
-                        className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
-                          ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                        className={`flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
+                          ${isSelected ? "border-primary bg-primary/10" : "border-gray-200 bg-white"}`}
                       >
                         <IconComp className={`w-6 h-6 ${food.color}`} />
                         <span className="text-[10px] text-gray-500">{food.key}</span>
@@ -1098,7 +1137,7 @@ export default function WeeklyCareMatrixPage() {
 
                 {/* 選択済みの餌ごとの詳細 */}
                 {feedingInputs.map((fi, idx) => (
-                  <div key={fi.foodType} className="flex items-center gap-3 py-2 border-t border-gray-100">
+                  <div key={fi.foodType} className="flex items-center gap-3 py-2.5 border-t border-gray-100">
                     <span className="text-xs font-medium text-gray-600 w-20 truncate">{fi.foodType}</span>
 
                     {/* 数量 */}
@@ -1142,7 +1181,7 @@ export default function WeeklyCareMatrixPage() {
                           )
                         );
                       }}
-                      className={`px-2 py-1 rounded-md text-[10px] font-medium border transition-colors
+                      className={`px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors
                         ${fi.dusting ? "bg-emerald-50 border-emerald-400 text-emerald-700" : "border-gray-200 text-gray-400"}`}
                     >
                       Ca
@@ -1158,7 +1197,7 @@ export default function WeeklyCareMatrixPage() {
                           )
                         );
                       }}
-                      className={`px-2 py-1 rounded-md text-[10px] font-medium border transition-colors
+                      className={`px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors
                         ${fi.refused ? "bg-red-50 border-red-400 text-red-700" : "border-gray-200 text-gray-400"}`}
                     >
                       拒食
@@ -1169,7 +1208,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 3. 排泄（うんち） */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-2">排泄</h3>
+                <h3 className="text-sm font-bold text-gray-700 mb-3">排泄</h3>
                 <div className="flex gap-2">
                   {[
                     { label: "普通", emoji: "💩" },
@@ -1180,8 +1219,8 @@ export default function WeeklyCareMatrixPage() {
                       key={opt.label}
                       type="button"
                       onClick={() => setPoopInput(poopInput === opt.label ? null : opt.label)}
-                      className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
-                        ${poopInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
+                        ${poopInput === opt.label ? "border-primary bg-primary/10" : "border-gray-200 bg-white"}`}
                     >
                       <span className="text-lg">{opt.emoji}</span>
                       <span className="text-[10px] text-gray-500">{opt.label}</span>
@@ -1192,7 +1231,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 4. 尿酸 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-2">尿酸</h3>
+                <h3 className="text-sm font-bold text-gray-700 mb-3">尿酸</h3>
                 <div className="flex gap-2">
                   {[
                     { label: "白い", emoji: "⚪" },
@@ -1203,8 +1242,8 @@ export default function WeeklyCareMatrixPage() {
                       key={opt.label}
                       type="button"
                       onClick={() => setUrineInput(urineInput === opt.label ? null : opt.label)}
-                      className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
-                        ${urineInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
+                        ${urineInput === opt.label ? "border-primary bg-primary/10" : "border-gray-200 bg-white"}`}
                     >
                       <span className="text-lg">{opt.emoji}</span>
                       <span className="text-[10px] text-gray-500">{opt.label}</span>
@@ -1215,7 +1254,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 5. 脱皮 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-2">脱皮</h3>
+                <h3 className="text-sm font-bold text-gray-700 mb-3">脱皮</h3>
                 <div className="flex gap-2">
                   {[
                     { label: "白濁",   emoji: "👁️" },
@@ -1226,8 +1265,8 @@ export default function WeeklyCareMatrixPage() {
                       key={opt.label}
                       type="button"
                       onClick={() => setShedInput(shedInput === opt.label ? null : opt.label)}
-                      className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
-                        ${shedInput === opt.label ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                      className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
+                        ${shedInput === opt.label ? "border-primary bg-primary/10" : "border-gray-200 bg-white"}`}
                     >
                       <span className="text-lg">{opt.emoji}</span>
                       <span className="text-[10px] text-gray-500">{opt.label}</span>
@@ -1238,7 +1277,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 6. 体重・体長 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-2">体重・体長</h3>
+                <h3 className="text-sm font-bold text-gray-700 mb-3">体重・体長</h3>
                 <div className="flex gap-3">
                   <div className="flex-1">
                     <label className="text-[10px] text-gray-400 mb-1 block">体重 (g)</label>
@@ -1247,8 +1286,8 @@ export default function WeeklyCareMatrixPage() {
                       inputMode="decimal"
                       value={weightInput}
                       onChange={(e) => setWeightInput(e.target.value)}
-                      placeholder="0.0"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400"
+                      placeholder="--"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
                     />
                   </div>
                   <div className="flex-1">
@@ -1258,8 +1297,8 @@ export default function WeeklyCareMatrixPage() {
                       inputMode="decimal"
                       value={lengthInput}
                       onChange={(e) => setLengthInput(e.target.value)}
-                      placeholder="0.0"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400"
+                      placeholder="--"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
                     />
                   </div>
                 </div>
@@ -1267,8 +1306,8 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 7. ケアトグル（8項目） */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-2">ケア記録</h3>
-                <div className="grid grid-cols-4 gap-2">
+                <h3 className="text-sm font-bold text-gray-700 mb-3">ケア記録</h3>
+                <div className="grid grid-cols-4 gap-x-2 gap-y-6">
                   {CARE_TOGGLE_ITEMS.map((item) => {
                     const IconComp = item.icon;
                     const isOn = toggleCares[item.key] ?? false;
@@ -1279,14 +1318,25 @@ export default function WeeklyCareMatrixPage() {
                         onClick={() =>
                           setToggleCares((prev) => ({ ...prev, [item.key]: !isOn }))
                         }
-                        className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition-colors
-                          ${isOn ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}`}
+                        className="flex flex-col items-center gap-1.5"
                       >
-                        <IconComp className={`w-5 h-5 ${isOn ? item.color : "text-gray-300"}`} />
-                        <span className={`text-[10px] ${isOn ? "text-gray-700 font-medium" : "text-gray-400"}`}>
+                        <div
+                          className={`w-16 h-16 rounded-2xl flex items-center justify-center border transition-all
+                            ${isOn
+                              ? `${item.bg} border-current ${item.color} ring-2 ring-current/20 scale-105`
+                              : "bg-gray-50 border-gray-200"
+                            }`}
+                        >
+                          <IconComp className={`w-7 h-7 ${isOn ? item.color : "text-gray-300"}`} />
+                        </div>
+                        <span
+                          className={`text-xs font-bold ${
+                            isOn ? "text-gray-700" : "text-gray-400"
+                          }`}
+                        >
                           {item.label}
                         </span>
-                        {isOn && <Check className="w-3 h-3 text-blue-500" />}
+                        {isOn && <Check className="w-3.5 h-3.5 text-primary" />}
                       </button>
                     );
                   })}
@@ -1295,19 +1345,29 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 8. メモ */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-2">メモ</h3>
+                <h3 className="text-sm font-bold text-gray-700 mb-3">メモ</h3>
                 <textarea
                   value={memoInput}
                   onChange={(e) => setMemoInput(e.target.value)}
                   placeholder="自由メモ（任意）"
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-blue-400"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
                 />
               </section>
+
+              {/* 保存ボタン */}
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full py-3.5 bg-primary text-white text-sm font-bold rounded-2xl disabled:opacity-50 transition-colors active:bg-primary/90"
+              >
+                {saving ? "保存中…" : "保存する"}
+              </button>
 
               {/* 下部余白（セーフエリア） */}
               <div className="h-6" />
             </div>
+          )}
         </div>
       </>
     )}
