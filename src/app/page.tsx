@@ -61,6 +61,7 @@ interface CareItem {
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   bg: string;
+  dotBg: string;
 }
 
 interface IndividualTab {
@@ -88,22 +89,22 @@ interface FeedingInput {
 // ── 定数 ──────────────────────────────────────────────
 
 const CARE_ITEMS: CareItem[] = [
-  { type: "feeding",      label: "給餌",       icon: Utensils,       color: "text-orange-500",  bg: "bg-orange-50" },
-  { type: "water_change", label: "水替",       icon: Droplets,       color: "text-blue-500",    bg: "bg-blue-50" },
-  { type: "poop",         label: "排泄",       icon: Trash2,         color: "text-amber-600",   bg: "bg-amber-50" },
-  { type: "shedding",     label: "脱皮",       icon: Layers,         color: "text-purple-500",  bg: "bg-purple-50" },
-  { type: "cleaning",     label: "掃除",       icon: Brush,          color: "text-teal-500",    bg: "bg-teal-50" },
-  { type: "weight",       label: "体重",       icon: Scale,          color: "text-slate-500",   bg: "bg-slate-100" },
-  { type: "bathing",      label: "温浴",       icon: Bath,           color: "text-red-500",     bg: "bg-red-50" },
-  { type: "condition",    label: "体調",       icon: Heart,          color: "text-rose-500",    bg: "bg-rose-50" },
-  { type: "urine",        label: "尿酸",       icon: GlassWater,     color: "text-yellow-500",  bg: "bg-yellow-50" },
-  { type: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Hand,           color: "text-fuchsia-500", bg: "bg-fuchsia-50" },
-  { type: "medication",   label: "投薬",       icon: Pill,           color: "text-red-600",     bg: "bg-red-50" },
-  { type: "hospital",     label: "通院",       icon: Hospital,       color: "text-rose-600",    bg: "bg-rose-50" },
-  { type: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",    bg: "bg-pink-50" },
-  { type: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-yellow-600",  bg: "bg-yellow-50" },
-  { type: "memo",         label: "メモ",       icon: FileText,       color: "text-gray-500",    bg: "bg-gray-50" },
-  { type: "photo",        label: "写真",       icon: Camera,         color: "text-sky-500",     bg: "bg-sky-50" },
+  { type: "feeding",      label: "給餌",       icon: Utensils,       color: "text-orange-500",  bg: "bg-orange-50",  dotBg: "bg-orange-500" },
+  { type: "water_change", label: "水替",       icon: Droplets,       color: "text-blue-500",    bg: "bg-blue-50",    dotBg: "bg-blue-500" },
+  { type: "poop",         label: "排泄",       icon: Trash2,         color: "text-amber-600",   bg: "bg-amber-50",   dotBg: "bg-amber-600" },
+  { type: "shedding",     label: "脱皮",       icon: Layers,         color: "text-purple-500",  bg: "bg-purple-50",  dotBg: "bg-purple-500" },
+  { type: "cleaning",     label: "掃除",       icon: Brush,          color: "text-teal-500",    bg: "bg-teal-50",    dotBg: "bg-teal-500" },
+  { type: "weight",       label: "体重",       icon: Scale,          color: "text-slate-500",   bg: "bg-slate-100",  dotBg: "bg-slate-500" },
+  { type: "bathing",      label: "温浴",       icon: Bath,           color: "text-red-500",     bg: "bg-red-50",     dotBg: "bg-red-500" },
+  { type: "condition",    label: "体調",       icon: Heart,          color: "text-rose-500",    bg: "bg-rose-50",    dotBg: "bg-rose-500" },
+  { type: "urine",        label: "尿酸",       icon: GlassWater,     color: "text-yellow-500",  bg: "bg-yellow-50",  dotBg: "bg-yellow-500" },
+  { type: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Hand,           color: "text-fuchsia-500", bg: "bg-fuchsia-50", dotBg: "bg-fuchsia-500" },
+  { type: "medication",   label: "投薬",       icon: Pill,           color: "text-red-600",     bg: "bg-red-50",     dotBg: "bg-red-600" },
+  { type: "hospital",     label: "通院",       icon: Hospital,       color: "text-rose-600",    bg: "bg-rose-50",    dotBg: "bg-rose-600" },
+  { type: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",    bg: "bg-pink-50",    dotBg: "bg-pink-500" },
+  { type: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-yellow-600",  bg: "bg-yellow-50",  dotBg: "bg-yellow-600" },
+  { type: "memo",         label: "メモ",       icon: FileText,       color: "text-gray-500",    bg: "bg-gray-50",    dotBg: "bg-gray-500" },
+  { type: "photo",        label: "写真",       icon: Camera,         color: "text-sky-500",     bg: "bg-sky-50",     dotBg: "bg-sky-500" },
 ];
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -312,7 +313,7 @@ function renderMonthCellDots(dayEvents: CareEvent[]) {
   return uniqueTypes.map((care) => (
     <div
       key={care.type}
-      className={`w-1.5 h-1.5 rounded-full ${care.color.replace("text-", "bg-")}`}
+      className={`w-1.5 h-1.5 rounded-full ${care.dotBg}`}
     />
   ));
 }
@@ -987,52 +988,6 @@ export default function WeeklyCareMatrixPage() {
           </div>
         )}
 
-        {/* ═══ E. 今日のタスク（静的モック） ═══ */}
-        <div>
-          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
-            今日のタスク
-          </h3>
-          <div className="space-y-2">
-            <div className="bg-white p-4 rounded-xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
-                  <Utensils className="w-5 h-5 text-orange-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">給餌</p>
-                  <p className="text-xs text-gray-400">18:00 予定</p>
-                </div>
-              </div>
-              <div className="w-5 h-5 rounded border-2 border-gray-200" />
-            </div>
-
-            <div className="bg-white p-4 rounded-xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Droplets className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">水替え</p>
-                  <p className="text-xs text-gray-400">朝のルーティン</p>
-                </div>
-              </div>
-              <div className="w-5 h-5 rounded border-2 border-gray-200" />
-            </div>
-
-            <div className="bg-white p-4 rounded-xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                  <Scale className="w-5 h-5 text-slate-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">体重測定</p>
-                  <p className="text-xs text-gray-400">週1回の計測日</p>
-                </div>
-              </div>
-              <div className="w-5 h-5 rounded border-2 border-gray-200" />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
