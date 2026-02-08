@@ -243,14 +243,6 @@ export default function IndividualsPage() {
         )}
       </div>
 
-      {/* ═══ FAB（個体追加ボタン） ═══ */}
-      <Link
-        href="/individuals/new"
-        className="fixed bottom-24 right-5 z-40 bg-gradient-to-r from-violet-500 to-emerald-400 text-slate-900 rounded-full pl-5 pr-6 py-4 flex items-center gap-2 shadow-[0_0_15px_rgba(43,238,157,0.3)] active:scale-95 hover:opacity-90 hover:-translate-y-1 transition-all"
-      >
-        <Plus size={20} />
-        <span className="text-sm font-bold">個体を追加</span>
-      </Link>
     </div>
   );
 }
