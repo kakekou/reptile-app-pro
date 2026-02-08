@@ -15,7 +15,9 @@
       "Bash(git -C \"C:\\\\Users\\\\a\\\\reptile-app\" commit -m \"$\\(cat <<''EOF''\nfix: robust modal open - button elements, z-9999, vh fallback, debug btn\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git -C \"C:\\\\Users\\\\a\\\\reptile-app\" commit -m \"$\\(cat <<''EOF''\nfix: move modal outside page container to fix visibility\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npm run build:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }
