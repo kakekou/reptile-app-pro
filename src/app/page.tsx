@@ -1087,39 +1087,6 @@ export default function WeeklyCareMatrixPage() {
                 </div>
               </section>
 
-              {/* 2. 給餌 */}
-              <section>
-                <h3 className="text-sm font-bold text-slate-300 mb-3">給餌</h3>
-                <Link
-                  href={`/record?individual_id=${selectedId}&date=${modalDate}&section=feeding`}
-                  onClick={() => setModalOpen(false)}
-                  className="flex items-center justify-between w-full p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20 active:scale-[0.98] transition-transform"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                      <Utensils className="w-5 h-5 text-orange-400" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-bold text-white">給餌を記録する</span>
-                      <p className="text-xs text-slate-500 mt-0.5">種類・量・サプリを入力</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-500" />
-                </Link>
-                {feedingInputs.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    {feedingInputs.map((fi) => (
-                      <div key={fi.foodType} className="flex items-center gap-2 py-1.5 px-3 bg-[#0F172A]/50 rounded-lg border border-white/10 text-xs">
-                        <span className="font-medium text-slate-300">{fi.foodType}</span>
-                        <span className="text-slate-500">×</span>
-                        <span className="font-bold text-white">{fi.quantity}</span>
-                        {fi.dusting && <span className="text-emerald-400 font-medium">Ca</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
               {/* 3. 排泄（うんち） */}
               <section>
                 <h3 className="text-sm font-bold text-slate-300 mb-3">排泄</h3>
