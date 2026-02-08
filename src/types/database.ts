@@ -151,7 +151,8 @@ export interface CareLog {
   id: string;
   user_id: string;
   individual_id: string;
-  log_type: CareLogType;
+  care_type: CareLogType;
+  value: string | null;
   logged_on: string;
   notes: string;
   created_at: string;

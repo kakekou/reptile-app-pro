@@ -117,7 +117,8 @@ interface FeedingRow {
 interface CareLogRow {
   id: string;
   individual_id: string;
-  log_type: string;
+  care_type: string;
+  value: string | null;
   logged_on: string;
 }
 
@@ -191,7 +192,7 @@ export default function ManagementPage() {
       supabase.from('individuals').select('id, name, species').eq('status', '飼育中').order('name'),
       supabase.from('measurements').select('individual_id, measured_on, weight_g, length_cm').order('measured_on', { ascending: true }),
       supabase.from('feedings').select('id, individual_id, fed_at, food_type').order('fed_at', { ascending: false }).limit(200),
-      supabase.from('care_logs').select('id, individual_id, log_type, logged_on').order('logged_on', { ascending: false }).limit(200),
+      supabase.from('care_logs').select('id, individual_id, care_type, value, logged_on').order('logged_on', { ascending: false }).limit(200),
       supabase.from('health_logs').select('id, individual_id, logged_on, condition').order('logged_on', { ascending: false }).limit(200),
       supabase.from('sheds').select('id, individual_id, shed_on, completeness').order('shed_on', { ascending: false }).limit(200),
     ]).then(([indRes, measRes, feedRes, careRes, healthRes, shedRes]) => {
@@ -561,7 +562,7 @@ function ScheduleSection({
 
       // 掃除スケジュール
       const latestCleaning = careLogs.find(
-        (c) => c.individual_id === ind.id && c.log_type === 'cleaning'
+        (c) => c.individual_id === ind.id && c.care_type === 'cleaning'
       );
       if (latestCleaning) {
         const daysSince = daysBetween(latestCleaning.logged_on, now);
@@ -575,7 +576,7 @@ function ScheduleSection({
 
       // 投薬スケジュール
       const latestMed = careLogs.find(
-        (c) => c.individual_id === ind.id && c.log_type === 'medication'
+        (c) => c.individual_id === ind.id && c.care_type === 'medication'
       );
       if (latestMed) {
         const daysSince = daysBetween(latestMed.logged_on, now);
@@ -865,10 +866,10 @@ function ActivityLogSection({
     for (const c of careLogs.slice(0, 20)) {
       records.push({
         id: `c-${c.id}`,
-        type: c.log_type,
+        type: c.care_type,
         date: c.logged_on,
-        label: RECORD_LABEL[c.log_type] ?? c.log_type,
-        detail: '',
+        label: RECORD_LABEL[c.care_type] ?? c.care_type,
+        detail: c.value ?? '',
         individualName: nameMap[c.individual_id] ?? '',
       });
     }
