@@ -19,7 +19,8 @@
       "Bash(npx next lint:*)",
       "Bash(npx eslint:*)",
       "Bash(git rm:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

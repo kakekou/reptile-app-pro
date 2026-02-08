@@ -71,20 +71,20 @@ const RECORD_ICONS: Record<string, typeof Heart> = {
 };
 
 const RECORD_STYLE: Record<string, { label: string; iconBg: string; iconColor: string }> = {
-  feeding: { label: '給餌', iconBg: 'bg-primary/10', iconColor: 'text-primary' },
-  shed: { label: '脱皮', iconBg: 'bg-blue-50', iconColor: 'text-blue-500' },
-  measurement: { label: '計測', iconBg: 'bg-purple-50', iconColor: 'text-purple-500' },
-  health: { label: '体調記録', iconBg: 'bg-green-50', iconColor: 'text-green-500' },
-  poop: { label: '排泄', iconBg: 'bg-yellow-50', iconColor: 'text-yellow-600' },
-  urine: { label: '排尿', iconBg: 'bg-yellow-50', iconColor: 'text-yellow-600' },
-  cleaning: { label: '掃除', iconBg: 'bg-amber-50', iconColor: 'text-amber-500' },
-  bathing: { label: '入浴', iconBg: 'bg-indigo-50', iconColor: 'text-indigo-500' },
-  handling: { label: 'ハンドリング', iconBg: 'bg-pink-50', iconColor: 'text-pink-500' },
-  water_change: { label: '水替え', iconBg: 'bg-cyan-50', iconColor: 'text-cyan-500' },
-  medication: { label: '投薬', iconBg: 'bg-red-50', iconColor: 'text-red-500' },
-  hospital: { label: '通院', iconBg: 'bg-rose-50', iconColor: 'text-rose-500' },
-  mating: { label: '交尾', iconBg: 'bg-pink-50', iconColor: 'text-pink-500' },
-  egg_laying: { label: '産卵', iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
+  feeding: { label: '給餌', iconBg: 'bg-primary/15', iconColor: 'text-primary' },
+  shed: { label: '脱皮', iconBg: 'bg-blue-500/15', iconColor: 'text-blue-400' },
+  measurement: { label: '計測', iconBg: 'bg-purple-500/15', iconColor: 'text-purple-400' },
+  health: { label: '体調記録', iconBg: 'bg-green-500/15', iconColor: 'text-green-400' },
+  poop: { label: '排泄', iconBg: 'bg-yellow-500/15', iconColor: 'text-yellow-400' },
+  urine: { label: '排尿', iconBg: 'bg-yellow-500/15', iconColor: 'text-yellow-400' },
+  cleaning: { label: '掃除', iconBg: 'bg-amber-500/15', iconColor: 'text-amber-400' },
+  bathing: { label: '入浴', iconBg: 'bg-indigo-500/15', iconColor: 'text-indigo-400' },
+  handling: { label: 'ハンドリング', iconBg: 'bg-pink-500/15', iconColor: 'text-pink-400' },
+  water_change: { label: '水替え', iconBg: 'bg-cyan-500/15', iconColor: 'text-cyan-400' },
+  medication: { label: '投薬', iconBg: 'bg-red-500/15', iconColor: 'text-red-400' },
+  hospital: { label: '通院', iconBg: 'bg-rose-500/15', iconColor: 'text-rose-400' },
+  mating: { label: '交尾', iconBg: 'bg-pink-500/15', iconColor: 'text-pink-400' },
+  egg_laying: { label: '産卵', iconBg: 'bg-amber-500/15', iconColor: 'text-amber-400' },
 };
 
 // ── 型 ────────────────────────────────────────────────
@@ -320,7 +320,7 @@ export default function IndividualDetailPage() {
 
   if (loading || !individual) {
     return (
-      <div className="flex items-center justify-center min-h-dvh bg-[#F8FAFC] text-slate-400">
+      <div className="flex items-center justify-center min-h-dvh bg-[#0F172A] text-slate-400">
         読み込み中...
       </div>
     );
@@ -331,25 +331,25 @@ export default function IndividualDetailPage() {
   // ── 描画 ──
 
   return (
-    <div className="bg-[#F8FAFC] min-h-dvh">
+    <div className="bg-[#0F172A] min-h-dvh text-white">
       {/* ═══ 固定トップナビ ═══ */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#F8FAFC]/80 backdrop-blur-md border-b border-gray-100">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0F172A]/80 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-lg mx-auto flex items-center justify-between px-4 h-14">
           <Link
             href="/individuals"
-            className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+            className="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
           >
-            <ArrowLeft size={20} className="text-slate-600" />
+            <ArrowLeft size={20} className="text-slate-300" />
           </Link>
           <div className="text-center">
-            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
               個体詳細
             </p>
-            <p className="text-base font-bold tracking-tight text-slate-800 leading-tight">
+            <p className="text-base font-bold tracking-tight text-white leading-tight">
               {individual.name}
             </p>
           </div>
-          <button className="w-10 h-10 rounded-full hover:bg-primary/10 flex items-center justify-center transition-colors">
+          <button className="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors">
             <Pencil size={18} className="text-primary" />
           </button>
         </div>
@@ -357,84 +357,91 @@ export default function IndividualDetailPage() {
 
       {/* ═══ コンテンツ ═══ */}
       <div className="max-w-lg mx-auto pt-20 pb-24 px-4 flex flex-col gap-6">
-        {/* ═══ ヒーロー画像 ═══ */}
-        <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] relative">
-          {hasImage ? (
-            <>
-              <img
-                src={individual.image_url!}
-                alt={individual.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            </>
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-slate-200 flex items-center justify-center">
-              <span className="text-6xl font-black text-slate-400">
-                {individual.name.charAt(0)}
-              </span>
+        {/* ═══ ヒーロープロフィール ═══ */}
+        <div className="flex flex-col items-center pt-4">
+          {/* 円形アバター */}
+          <div className="relative">
+            <div className="w-32 h-32 rounded-full overflow-hidden border-[3px] border-primary/50 shadow-[0_0_30px_rgba(16,183,127,0.3)]">
+              {hasImage ? (
+                <img
+                  src={individual.image_url!}
+                  alt={individual.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-[#1E293B] flex items-center justify-center">
+                  <span className="text-4xl font-black text-primary">
+                    {individual.name.charAt(0)}
+                  </span>
+                </div>
+              )}
             </div>
-          )}
-
-          {/* バッジ群 */}
-          <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 flex-wrap">
+            {/* 性別バッジ */}
             {individual.sex !== '不明' && (
-              <span
-                className={`px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-xs font-bold ${
-                  individual.sex === 'オス' ? 'text-blue-500' : 'text-rose-500'
-                }`}
-              >
-                {individual.sex === 'オス' ? '♂ オス' : '♀ メス'}
-              </span>
+              <div className="absolute -bottom-1 -right-1 bg-[#0F172A] rounded-full p-1">
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                    individual.sex === 'オス'
+                      ? 'text-blue-400 bg-blue-400/15'
+                      : 'text-pink-400 bg-pink-400/15'
+                  }`}
+                >
+                  {individual.sex === 'オス' ? '♂' : '♀'}
+                </div>
+              </div>
             )}
-            <span className="px-2.5 py-1 bg-primary/90 text-white rounded-lg text-xs font-bold">
+            {/* カメラボタン */}
+            <button className="absolute -bottom-1 -left-1 bg-[#0F172A] rounded-full p-1">
+              <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center">
+                <Camera size={14} className="text-slate-300" />
+              </div>
+            </button>
+          </div>
+
+          {/* 名前・種名・モルフ */}
+          <h2 className="text-2xl font-bold mt-4 text-white">{individual.name}</h2>
+          <p className="text-sm text-slate-400 mt-0.5">
+            {SPECIES_SHORT[individual.species] ?? individual.species}
+          </p>
+
+          {/* タグ行 */}
+          <div className="flex items-center gap-2 mt-3 flex-wrap justify-center">
+            <span className="px-3 py-1 bg-primary/15 text-primary rounded-full text-xs font-bold">
               {individual.status}
             </span>
-            <span
-              className={`px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold ${
-                hasImage ? 'bg-white/50 text-white' : 'bg-white/70 text-slate-600'
-              }`}
-            >
-              {SPECIES_SHORT[individual.species] ?? individual.species}
-            </span>
             {individual.morph && (
-              <span className="px-2.5 py-1 bg-purple-500/80 backdrop-blur-sm text-white rounded-lg text-xs font-bold">
+              <span className="px-3 py-1 bg-purple-500/15 text-purple-400 rounded-full text-xs font-bold">
                 {individual.morph}
               </span>
             )}
+            {age && (
+              <span className="px-3 py-1 bg-white/10 text-slate-300 rounded-full text-xs font-medium">
+                {age.years}歳{age.months}ヶ月
+              </span>
+            )}
           </div>
-
-          {/* カメラボタン */}
-          <button
-            className={`absolute bottom-4 right-4 z-20 p-2 rounded-full ${
-              hasImage
-                ? 'bg-white/20 backdrop-blur-md text-white'
-                : 'bg-white/50 backdrop-blur-md text-slate-500'
-            }`}
-          >
-            <Camera size={18} />
-          </button>
         </div>
 
         {/* ═══ ステータスカード（3列） ═══ */}
         <div className="grid grid-cols-3 gap-3">
           {/* 体重 */}
-          <div className="bg-white rounded-xl p-4 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col items-center justify-center gap-1">
-            <span className="text-xs font-medium text-slate-500">現在の体重</span>
+          <div className="bg-[#1E293B] rounded-xl p-4 border border-white/5 flex flex-col items-center justify-center gap-1">
+            <Scale size={16} className="text-primary mb-1" />
+            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">体重</span>
             {latestWeight != null ? (
               <>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-2xl font-extrabold text-primary tracking-tight">
+                  <span className="text-2xl font-extrabold text-white tracking-tight">
                     {latestWeight}
                   </span>
-                  <span className="text-sm text-primary/80">g</span>
+                  <span className="text-sm text-slate-400">g</span>
                 </div>
                 {weightDiff != null && weightDiff !== 0 && (
                   <span
                     className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                       weightDiff > 0
-                        ? 'text-primary bg-primary/10'
-                        : 'text-red-500 bg-red-50'
+                        ? 'text-primary bg-primary/15'
+                        : 'text-red-400 bg-red-500/15'
                     }`}
                   >
                     {weightDiff > 0 ? '+' : ''}{weightDiff}g
@@ -442,27 +449,28 @@ export default function IndividualDetailPage() {
                 )}
               </>
             ) : (
-              <span className="text-2xl font-extrabold text-slate-300">&mdash;</span>
+              <span className="text-2xl font-extrabold text-slate-600">&mdash;</span>
             )}
           </div>
 
           {/* 全長 */}
-          <div className="bg-white rounded-xl p-4 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col items-center justify-center gap-1">
-            <span className="text-xs font-medium text-slate-500">全長</span>
+          <div className="bg-[#1E293B] rounded-xl p-4 border border-white/5 flex flex-col items-center justify-center gap-1">
+            <Ruler size={16} className="text-blue-400 mb-1" />
+            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">全長</span>
             {latestLength != null ? (
               <>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                  <span className="text-2xl font-extrabold text-white tracking-tight">
                     {latestLength}
                   </span>
-                  <span className="text-sm text-slate-500">cm</span>
+                  <span className="text-sm text-slate-400">cm</span>
                 </div>
                 {lengthDiff != null && lengthDiff !== 0 && (
                   <span
                     className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                       lengthDiff > 0
-                        ? 'text-primary bg-primary/10'
-                        : 'text-red-500 bg-red-50'
+                        ? 'text-primary bg-primary/15'
+                        : 'text-red-400 bg-red-500/15'
                     }`}
                   >
                     {lengthDiff > 0 ? '+' : ''}{lengthDiff}cm
@@ -470,27 +478,28 @@ export default function IndividualDetailPage() {
                 )}
               </>
             ) : (
-              <span className="text-2xl font-extrabold text-slate-300">&mdash;</span>
+              <span className="text-2xl font-extrabold text-slate-600">&mdash;</span>
             )}
           </div>
 
           {/* 年齢 */}
-          <div className="bg-white rounded-xl p-4 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col items-center justify-center gap-1">
-            <span className="text-xs font-medium text-slate-500">年齢</span>
+          <div className="bg-[#1E293B] rounded-xl p-4 border border-white/5 flex flex-col items-center justify-center gap-1">
+            <Heart size={16} className="text-pink-400 mb-1" />
+            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">年齢</span>
             {age ? (
               <>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-xl font-extrabold text-slate-900">{age.years}</span>
-                  <span className="text-xs text-slate-500">歳</span>
-                  <span className="text-xl font-extrabold text-slate-900">{age.months}</span>
-                  <span className="text-xs text-slate-500">ヶ月</span>
+                  <span className="text-xl font-extrabold text-white">{age.years}</span>
+                  <span className="text-xs text-slate-400">歳</span>
+                  <span className="text-xl font-extrabold text-white">{age.months}</span>
+                  <span className="text-xs text-slate-400">ヶ月</span>
                 </div>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-slate-500">
                   孵化: {new Date(individual.birth_date!).getFullYear()}年
                 </span>
               </>
             ) : (
-              <span className="text-2xl font-extrabold text-slate-300">&mdash;</span>
+              <span className="text-2xl font-extrabold text-slate-600">&mdash;</span>
             )}
           </div>
         </div>
@@ -520,25 +529,25 @@ export default function IndividualDetailPage() {
         />
 
         {/* ═══ 各月の記録 ═══ */}
-        <div className="bg-white rounded-2xl p-5 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100">
+        <div className="bg-[#1E293B] rounded-2xl p-5 border border-white/5">
           <div className="flex items-center justify-between mb-1">
             <div>
-              <h2 className="text-base font-bold text-slate-900">各月の記録</h2>
-              <p className="text-xs text-slate-500">Monthly Activity</p>
+              <h2 className="text-base font-bold text-white">各月の記録</h2>
+              <p className="text-xs text-slate-400">Monthly Activity</p>
             </div>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setChartYear((y) => y - 1)}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
               >
                 <ChevronLeft size={18} className="text-slate-400" />
               </button>
-              <span className="text-sm font-bold text-slate-700 tabular-nums">{chartYear}</span>
+              <span className="text-sm font-bold text-slate-300 tabular-nums">{chartYear}</span>
               <button
                 type="button"
                 onClick={() => setChartYear((y) => y + 1)}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
               >
                 <ChevronRight size={18} className="text-slate-400" />
               </button>
@@ -549,15 +558,15 @@ export default function IndividualDetailPage() {
             {monthlyData.some((d) => d.count > 0) ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={monthlyData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tick={{ fontSize: 11, fill: '#64748b' }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tick={{ fontSize: 11, fill: '#64748b' }}
                     allowDecimals={false}
                     axisLine={false}
                     tickLine={false}
@@ -567,14 +576,14 @@ export default function IndividualDetailPage() {
                       dataKey="count"
                       position="top"
                       fontSize={10}
-                      fill="#94a3b8"
+                      fill="#64748b"
                       formatter={(v: unknown) => (Number(v) > 0 ? String(v) : '')}
                     />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-slate-400">
+              <div className="flex items-center justify-center h-[200px] text-sm text-slate-500">
                 データがありません
               </div>
             )}
@@ -585,21 +594,21 @@ export default function IndividualDetailPage() {
         {recentRecords.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-slate-900">最近の記録</h2>
+              <h2 className="text-base font-bold text-white">最近の記録</h2>
               <button className="text-xs font-semibold text-primary">すべて見る</button>
             </div>
             <div className="flex flex-col gap-2">
               {recentRecords.map((rec) => {
                 const style = RECORD_STYLE[rec.type] ?? {
                   label: rec.type,
-                  iconBg: 'bg-gray-100',
-                  iconColor: 'text-gray-500',
+                  iconBg: 'bg-slate-700',
+                  iconColor: 'text-slate-400',
                 };
                 const Icon = RECORD_ICONS[rec.type] ?? ClipboardList;
                 return (
                   <div
                     key={rec.id}
-                    className="bg-white p-4 rounded-xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center gap-3"
+                    className="bg-[#1E293B] p-4 rounded-xl border border-white/5 flex items-center gap-3"
                   >
                     <div
                       className={`w-10 h-10 rounded-full ${style.iconBg} flex items-center justify-center shrink-0`}
@@ -607,9 +616,9 @@ export default function IndividualDetailPage() {
                       <Icon size={18} className={style.iconColor} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-800">{rec.label}</p>
+                      <p className="text-sm font-bold text-white">{rec.label}</p>
                       {rec.detail && (
-                        <p className="text-xs text-slate-500 truncate">{rec.detail}</p>
+                        <p className="text-xs text-slate-400 truncate">{rec.detail}</p>
                       )}
                     </div>
                     <span className="text-xs text-slate-500 shrink-0">
@@ -623,10 +632,10 @@ export default function IndividualDetailPage() {
         )}
 
         {/* ═══ 遺伝・メモ ═══ */}
-        <div className="bg-white rounded-xl p-5 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100">
+        <div className="bg-[#1E293B] rounded-xl p-5 border border-white/5">
           <div className="flex items-center gap-2 mb-3">
             <Dna size={18} className="text-primary" />
-            <h2 className="text-sm font-bold text-slate-900">遺伝・メモ</h2>
+            <h2 className="text-sm font-bold text-white">遺伝・メモ</h2>
           </div>
 
           {individual.genes && individual.genes.length > 0 && (
@@ -634,7 +643,7 @@ export default function IndividualDetailPage() {
               {individual.genes.map((gene, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary"
+                  className="px-2 py-0.5 rounded-md text-xs font-medium bg-primary/15 text-primary"
                 >
                   {gene.locus}
                   {gene.copies === 2 ? ' (ホモ)' : gene.copies === 1 ? ' (het)' : ''}
@@ -644,11 +653,11 @@ export default function IndividualDetailPage() {
           )}
 
           {individual.notes && (
-            <p className="text-sm text-slate-500 leading-relaxed">{individual.notes}</p>
+            <p className="text-sm text-slate-400 leading-relaxed">{individual.notes}</p>
           )}
 
           {!individual.notes && (!individual.genes || individual.genes.length === 0) && (
-            <p className="text-sm text-slate-400">メモはありません</p>
+            <p className="text-sm text-slate-500">メモはありません</p>
           )}
         </div>
       </div>
@@ -656,7 +665,7 @@ export default function IndividualDetailPage() {
       {/* ═══ FAB メニューオーバーレイ ═══ */}
       {showFabMenu && (
         <div
-          className="fixed inset-0 z-[9998] bg-black/20 backdrop-blur-[1px]"
+          className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-[2px]"
           onClick={() => setShowFabMenu(false)}
         />
       )}
@@ -666,30 +675,30 @@ export default function IndividualDetailPage() {
         <div className="fixed bottom-24 right-6 z-[9999] flex flex-col gap-2">
           <Link
             href={`/individuals/${id}/feeding`}
-            className="flex items-center gap-3 bg-white rounded-full pl-4 pr-5 py-3 shadow-lg"
+            className="flex items-center gap-3 bg-[#1E293B] rounded-full pl-4 pr-5 py-3 shadow-lg border border-white/10"
           >
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
               <Utensils size={16} className="text-primary" />
             </div>
-            <span className="text-sm font-bold text-slate-800">給餌</span>
+            <span className="text-sm font-bold text-white">給餌</span>
           </Link>
           <Link
             href={`/individuals/${id}/growth`}
-            className="flex items-center gap-3 bg-white rounded-full pl-4 pr-5 py-3 shadow-lg"
+            className="flex items-center gap-3 bg-[#1E293B] rounded-full pl-4 pr-5 py-3 shadow-lg border border-white/10"
           >
-            <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center">
-              <Scale size={16} className="text-purple-500" />
+            <div className="w-8 h-8 rounded-full bg-purple-500/15 flex items-center justify-center">
+              <Scale size={16} className="text-purple-400" />
             </div>
-            <span className="text-sm font-bold text-slate-800">計測</span>
+            <span className="text-sm font-bold text-white">計測</span>
           </Link>
           <Link
             href={`/individuals/${id}/health`}
-            className="flex items-center gap-3 bg-white rounded-full pl-4 pr-5 py-3 shadow-lg"
+            className="flex items-center gap-3 bg-[#1E293B] rounded-full pl-4 pr-5 py-3 shadow-lg border border-white/10"
           >
-            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
-              <Heart size={16} className="text-green-500" />
+            <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center">
+              <Heart size={16} className="text-green-400" />
             </div>
-            <span className="text-sm font-bold text-slate-800">体調</span>
+            <span className="text-sm font-bold text-white">体調</span>
           </Link>
         </div>
       )}
@@ -697,7 +706,7 @@ export default function IndividualDetailPage() {
       {/* ═══ FAB ═══ */}
       <button
         onClick={() => setShowFabMenu(!showFabMenu)}
-        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 bg-primary hover:bg-emerald-600 rounded-full shadow-lg shadow-primary/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 bg-primary rounded-full shadow-[0_0_20px_rgba(16,183,127,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
       >
         {showFabMenu ? (
           <X size={28} className="text-white" />
@@ -731,14 +740,14 @@ function TrendChart({
   gradientId: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100">
+    <div className="bg-[#1E293B] rounded-2xl p-5 border border-white/5">
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-bold text-slate-900">{title}</h2>
-          <p className="text-xs text-slate-500">{subtitle}</p>
+          <h2 className="text-base font-bold text-white">{title}</h2>
+          <p className="text-xs text-slate-400">{subtitle}</p>
         </div>
-        <div className="bg-gray-100 p-1 rounded-lg flex">
+        <div className="bg-[#0F172A]/50 p-1 rounded-lg flex border border-white/5">
           {PERIOD_FILTERS.map((pf) => (
             <button
               type="button"
@@ -746,8 +755,8 @@ function TrendChart({
               onClick={() => onPeriodChange(pf.key)}
               className={`px-3 py-1 text-xs rounded-md transition-all ${
                 period === pf.key
-                  ? 'bg-white text-primary font-bold shadow-sm'
-                  : 'text-slate-500 font-medium'
+                  ? 'bg-[#334155] text-white font-bold'
+                  : 'text-slate-400 font-medium'
               }`}
             >
               {pf.label}
@@ -762,14 +771,14 @@ function TrendChart({
           <AreaChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+                <stop offset="0%" stopColor={color} stopOpacity={0.3} />
                 <stop offset="100%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 10, fill: '#94a3b8' }}
+              tick={{ fontSize: 10, fill: '#64748b' }}
               tickFormatter={(v: string) => {
                 const d = new Date(v);
                 return `${d.getMonth() + 1}/${d.getDate()}`;
@@ -778,11 +787,13 @@ function TrendChart({
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: '#94a3b8' }}
+              tick={{ fontSize: 11, fill: '#64748b' }}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
+              contentStyle={{ backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+              labelStyle={{ color: '#94a3b8' }}
               labelFormatter={(v: unknown) => {
                 const d = new Date(String(v));
                 return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
@@ -795,13 +806,13 @@ function TrendChart({
               stroke={color}
               strokeWidth={3}
               fill={`url(#${gradientId})`}
-              dot={{ fill: '#fff', stroke: color, strokeWidth: 2, r: 4 }}
-              activeDot={{ fill: color, stroke: '#fff', strokeWidth: 2, r: 6 }}
+              dot={{ fill: '#1E293B', stroke: color, strokeWidth: 2, r: 4 }}
+              activeDot={{ fill: color, stroke: '#1E293B', strokeWidth: 2, r: 6 }}
             />
           </AreaChart>
         </ResponsiveContainer>
       ) : (
-        <div className="flex items-center justify-center h-[250px] text-sm text-slate-400">
+        <div className="flex items-center justify-center h-[250px] text-sm text-slate-500">
           データがありません
         </div>
       )}
