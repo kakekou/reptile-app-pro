@@ -511,17 +511,7 @@ export default function WeeklyCareMatrixPage() {
         { condition: conditionInput },
       );
 
-      // 2. 給餌 → feedings（既存を全削除して新規insert）
-      for (const oldId of existingFeedingIds) {
-        ops.push(supabase.from('feedings').delete().eq('id', oldId).then(r => r));
-      }
-      for (const fi of feedingInputs) {
-        ops.push(supabase.from('feedings').insert({
-          user_id: userId, individual_id: selectedId,
-          fed_at: modalDate + 'T12:00:00',
-          food_type: fi.foodType, quantity: fi.quantity, refused: fi.refused,
-        }).select().then(r => r));
-      }
+      // 2. 給餌は専用ページ（/feeding）で管理
 
       // 3. 脱皮 → sheds
       const shedComp = shedInput === '脱皮完了' ? '完全' : shedInput === '不完全' ? '不完全' : '完全';
@@ -1061,104 +1051,34 @@ export default function WeeklyCareMatrixPage() {
               {/* 2. 給餌 */}
               <section>
                 <h3 className="text-sm font-bold text-gray-700 mb-3">給餌</h3>
-
-                {/* 餌の種類アイコングリッド */}
-                <div className="grid grid-cols-4 gap-2 mb-3">
-                  {FOOD_OPTIONS.map((food) => {
-                    const IconComp = food.icon;
-                    const isSelected = feedingInputs.some((f) => f.foodType === food.key);
-                    return (
-                      <button
-                        type="button"
-                        key={food.key}
-                        onClick={() => {
-                          setFeedingInputs((prev) => {
-                            const exists = prev.some((f) => f.foodType === food.key);
-                            if (exists) {
-                              return prev.filter((f) => f.foodType !== food.key);
-                            }
-                            return [...prev, { foodType: food.key, quantity: 1, dusting: false, refused: false }];
-                          });
-                        }}
-                        className={`flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
-                          ${isSelected ? "border-primary bg-primary/10" : "border-gray-200 bg-white"}`}
-                      >
-                        <IconComp className={`w-6 h-6 ${food.color}`} />
-                        <span className="text-[10px] text-gray-500">{food.key}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* 選択済みの餌ごとの詳細 */}
-                {feedingInputs.map((fi, idx) => (
-                  <div key={fi.foodType} className="flex items-center gap-3 py-2.5 border-t border-gray-100">
-                    <span className="text-xs font-medium text-gray-600 w-20 truncate">{fi.foodType}</span>
-
-                    {/* 数量 */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFeedingInputs((prev) =>
-                            prev.map((f, i) =>
-                              i === idx ? { ...f, quantity: Math.max(0, f.quantity - 1) } : f
-                            )
-                          );
-                        }}
-                        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-400"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="text-sm font-bold w-6 text-center">{fi.quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFeedingInputs((prev) =>
-                            prev.map((f, i) =>
-                              i === idx ? { ...f, quantity: f.quantity + 1 } : f
-                            )
-                          );
-                        }}
-                        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-400"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
+                <Link
+                  href={`/feeding?individual_id=${selectedId}&date=${modalDate}`}
+                  onClick={() => setModalOpen(false)}
+                  className="flex items-center justify-between w-full p-4 bg-orange-50 rounded-2xl border border-orange-100 active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                      <Utensils className="w-5 h-5 text-orange-500" />
                     </div>
-
-                    {/* ダスティング */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFeedingInputs((prev) =>
-                          prev.map((f, i) =>
-                            i === idx ? { ...f, dusting: !f.dusting } : f
-                          )
-                        );
-                      }}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors
-                        ${fi.dusting ? "bg-emerald-50 border-emerald-400 text-emerald-700" : "border-gray-200 text-gray-400"}`}
-                    >
-                      Ca
-                    </button>
-
-                    {/* 拒食 */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFeedingInputs((prev) =>
-                          prev.map((f, i) =>
-                            i === idx ? { ...f, refused: !f.refused } : f
-                          )
-                        );
-                      }}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors
-                        ${fi.refused ? "bg-red-50 border-red-400 text-red-700" : "border-gray-200 text-gray-400"}`}
-                    >
-                      拒食
-                    </button>
+                    <div>
+                      <span className="text-sm font-bold text-slate-800">給餌を記録する</span>
+                      <p className="text-xs text-gray-500 mt-0.5">種類・量・サプリを入力</p>
+                    </div>
                   </div>
-                ))}
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </Link>
+                {feedingInputs.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {feedingInputs.map((fi) => (
+                      <div key={fi.foodType} className="flex items-center gap-2 py-1.5 px-3 bg-white rounded-lg border border-gray-100 text-xs">
+                        <span className="font-medium text-gray-600">{fi.foodType}</span>
+                        <span className="text-gray-400">×</span>
+                        <span className="font-bold text-gray-800">{fi.quantity}</span>
+                        {fi.dusting && <span className="text-emerald-500 font-medium">Ca</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
 
               {/* 3. 排泄（うんち） */}
