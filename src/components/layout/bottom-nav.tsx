@@ -18,7 +18,7 @@ export function BottomNav() {
   if (pathname === '/login' || pathname.startsWith('/auth')) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#1E293B]/70 backdrop-blur-[12px] border-t border-white/5 safe-bottom">
       <div className="relative mx-auto max-w-lg">
         {/* 中央の+ボタン */}
         <div className="absolute left-1/2 -translate-x-1/2 -top-5">
@@ -47,7 +47,7 @@ export function BottomNav() {
                 } ${
                   isActive
                     ? 'text-primary'
-                    : 'text-gray-400'
+                    : 'text-slate-400'
                 }`}
               >
                 <Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} />

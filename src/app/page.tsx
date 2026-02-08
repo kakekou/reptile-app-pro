@@ -32,6 +32,7 @@ import {
   Bath,
   Hospital,
   Brush,
+  Thermometer,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -89,30 +90,30 @@ interface FeedingInput {
 // ── 定数 ──────────────────────────────────────────────
 
 const CARE_ITEMS: CareItem[] = [
-  { type: "feeding",      label: "給餌",       icon: Utensils,       color: "text-orange-500",  bg: "bg-orange-50",  dotBg: "bg-orange-500" },
-  { type: "water_change", label: "水替",       icon: Droplets,       color: "text-blue-500",    bg: "bg-blue-50",    dotBg: "bg-blue-500" },
-  { type: "poop",         label: "排泄",       icon: Trash2,         color: "text-amber-600",   bg: "bg-amber-50",   dotBg: "bg-amber-600" },
-  { type: "shedding",     label: "脱皮",       icon: Layers,         color: "text-purple-500",  bg: "bg-purple-50",  dotBg: "bg-purple-500" },
-  { type: "cleaning",     label: "掃除",       icon: Brush,          color: "text-teal-500",    bg: "bg-teal-50",    dotBg: "bg-teal-500" },
-  { type: "weight",       label: "体重",       icon: Scale,          color: "text-slate-500",   bg: "bg-slate-100",  dotBg: "bg-slate-500" },
-  { type: "bathing",      label: "温浴",       icon: Bath,           color: "text-red-500",     bg: "bg-red-50",     dotBg: "bg-red-500" },
-  { type: "condition",    label: "体調",       icon: Heart,          color: "text-rose-500",    bg: "bg-rose-50",    dotBg: "bg-rose-500" },
-  { type: "urine",        label: "尿酸",       icon: GlassWater,     color: "text-yellow-500",  bg: "bg-yellow-50",  dotBg: "bg-yellow-500" },
-  { type: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Hand,           color: "text-fuchsia-500", bg: "bg-fuchsia-50", dotBg: "bg-fuchsia-500" },
-  { type: "medication",   label: "投薬",       icon: Pill,           color: "text-red-600",     bg: "bg-red-50",     dotBg: "bg-red-600" },
-  { type: "hospital",     label: "通院",       icon: Hospital,       color: "text-rose-600",    bg: "bg-rose-50",    dotBg: "bg-rose-600" },
-  { type: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",    bg: "bg-pink-50",    dotBg: "bg-pink-500" },
-  { type: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-yellow-600",  bg: "bg-yellow-50",  dotBg: "bg-yellow-600" },
-  { type: "memo",         label: "メモ",       icon: FileText,       color: "text-gray-500",    bg: "bg-gray-50",    dotBg: "bg-gray-500" },
-  { type: "photo",        label: "写真",       icon: Camera,         color: "text-sky-500",     bg: "bg-sky-50",     dotBg: "bg-sky-500" },
+  { type: "feeding",      label: "給餌",       icon: Utensils,       color: "text-orange-500",  bg: "bg-orange-500/15",  dotBg: "bg-orange-500" },
+  { type: "water_change", label: "水替",       icon: Droplets,       color: "text-blue-500",    bg: "bg-blue-500/15",    dotBg: "bg-blue-500" },
+  { type: "poop",         label: "排泄",       icon: Trash2,         color: "text-amber-600",   bg: "bg-amber-500/15",   dotBg: "bg-amber-600" },
+  { type: "shedding",     label: "脱皮",       icon: Layers,         color: "text-purple-500",  bg: "bg-purple-500/15",  dotBg: "bg-purple-500" },
+  { type: "cleaning",     label: "掃除",       icon: Brush,          color: "text-teal-500",    bg: "bg-teal-500/15",    dotBg: "bg-teal-500" },
+  { type: "weight",       label: "体重",       icon: Scale,          color: "text-slate-400",   bg: "bg-slate-500/15",   dotBg: "bg-slate-500" },
+  { type: "bathing",      label: "温浴",       icon: Bath,           color: "text-red-500",     bg: "bg-red-500/15",     dotBg: "bg-red-500" },
+  { type: "condition",    label: "体調",       icon: Heart,          color: "text-rose-500",    bg: "bg-rose-500/15",    dotBg: "bg-rose-500" },
+  { type: "urine",        label: "尿酸",       icon: GlassWater,     color: "text-yellow-500",  bg: "bg-yellow-500/15",  dotBg: "bg-yellow-500" },
+  { type: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Hand,           color: "text-fuchsia-500", bg: "bg-fuchsia-500/15", dotBg: "bg-fuchsia-500" },
+  { type: "medication",   label: "投薬",       icon: Pill,           color: "text-red-600",     bg: "bg-red-500/15",     dotBg: "bg-red-600" },
+  { type: "hospital",     label: "通院",       icon: Hospital,       color: "text-rose-600",    bg: "bg-rose-500/15",    dotBg: "bg-rose-600" },
+  { type: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",    bg: "bg-pink-500/15",    dotBg: "bg-pink-500" },
+  { type: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-yellow-600",  bg: "bg-yellow-500/15",  dotBg: "bg-yellow-600" },
+  { type: "memo",         label: "メモ",       icon: FileText,       color: "text-gray-400",    bg: "bg-gray-500/15",    dotBg: "bg-gray-500" },
+  { type: "photo",        label: "写真",       icon: Camera,         color: "text-sky-500",     bg: "bg-sky-500/15",     dotBg: "bg-sky-500" },
 ];
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 const CONDITION_LEVELS = [
-  { value: "絶好調", label: "好調", emoji: "😊", color: "text-emerald-500", border: "border-emerald-400", bg: "bg-emerald-50", ring: "ring-emerald-200" },
-  { value: "普通",   label: "普通", emoji: "😐", color: "text-gray-400",    border: "border-gray-300",    bg: "bg-gray-50",    ring: "ring-gray-200" },
-  { value: "不調",   label: "不調", emoji: "😞", color: "text-red-500",     border: "border-red-400",     bg: "bg-red-50",     ring: "ring-red-200" },
+  { value: "絶好調", label: "好調", emoji: "😊", color: "text-emerald-400", border: "border-emerald-500/50", bg: "bg-emerald-500/15", ring: "ring-emerald-500/30" },
+  { value: "普通",   label: "普通", emoji: "😐", color: "text-slate-400",   border: "border-slate-500/50",   bg: "bg-slate-500/15",   ring: "ring-slate-500/30" },
+  { value: "不調",   label: "不調", emoji: "😞", color: "text-red-400",     border: "border-red-500/50",     bg: "bg-red-500/15",     ring: "ring-red-500/30" },
 ];
 
 const CONDITION_MAP: Record<string, string> = Object.fromEntries(
@@ -139,14 +140,14 @@ const FOOD_OPTIONS = [
 ];
 
 const CARE_TOGGLE_ITEMS = [
-  { key: "cleaning",     label: "掃除",       icon: Brush,          color: "text-teal-500",    bg: "bg-teal-50" },
-  { key: "bathing",      label: "温浴",       icon: Bath,           color: "text-red-500",     bg: "bg-red-50" },
-  { key: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Hand,           color: "text-fuchsia-500", bg: "bg-fuchsia-50" },
-  { key: "water_change", label: "水替え",     icon: Droplets,       color: "text-blue-500",    bg: "bg-blue-50" },
-  { key: "medication",   label: "投薬",       icon: Pill,           color: "text-red-600",     bg: "bg-red-50" },
-  { key: "hospital",     label: "通院",       icon: Hospital,       color: "text-rose-600",    bg: "bg-rose-50" },
-  { key: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-500",    bg: "bg-pink-50" },
-  { key: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-yellow-600",  bg: "bg-yellow-50" },
+  { key: "cleaning",     label: "掃除",       icon: Brush,          color: "text-teal-400",    bg: "bg-teal-500/15" },
+  { key: "bathing",      label: "温浴",       icon: Bath,           color: "text-red-400",     bg: "bg-red-500/15" },
+  { key: "handling",     label: "ﾊﾝﾄﾞﾘﾝｸﾞ",  icon: Hand,           color: "text-fuchsia-400", bg: "bg-fuchsia-500/15" },
+  { key: "water_change", label: "水替え",     icon: Droplets,       color: "text-blue-400",    bg: "bg-blue-500/15" },
+  { key: "medication",   label: "投薬",       icon: Pill,           color: "text-red-400",     bg: "bg-red-500/15" },
+  { key: "hospital",     label: "通院",       icon: Hospital,       color: "text-rose-400",    bg: "bg-rose-500/15" },
+  { key: "mating",       label: "交尾",       icon: HeartHandshake, color: "text-pink-400",    bg: "bg-pink-500/15" },
+  { key: "egg_laying",   label: "産卵",       icon: Egg,            color: "text-yellow-400",  bg: "bg-yellow-500/15" },
 ];
 
 // ── ユーティリティ関数 ─────────────────────────────────
@@ -667,18 +668,22 @@ export default function WeeklyCareMatrixPage() {
 
   return (
     <>
-    <div className="bg-[#f8f8fa] min-h-screen">
+    <div className="bg-[#0F172A] min-h-screen text-white relative overflow-hidden">
+      {/* ═══ アンビエント・グロー ═══ */}
+      <div className="fixed top-[-20%] left-[-10%] w-[60%] h-[60%] bg-primary/8 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
+
       {/* ═══ A. ヘッダー ═══ */}
-      <header className="sticky top-0 z-10 bg-[#f8f8fa]/80 backdrop-blur">
+      <header className="sticky top-0 z-10 bg-[#0F172A]/80 backdrop-blur-xl">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
               ReptiLog 🦎
             </h1>
             <p className="text-sm text-primary">{todayDisplay}</p>
           </div>
-          <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-            <Settings className="w-5 h-5 text-gray-500" />
+          <button className="p-2 rounded-full hover:bg-white/10 transition-colors">
+            <Settings className="w-5 h-5 text-slate-400" />
           </button>
         </div>
       </header>
@@ -688,12 +693,12 @@ export default function WeeklyCareMatrixPage() {
         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
           {loading ? (
             <>
-              <div className="h-10 animate-pulse bg-gray-100 rounded-full w-28" />
-              <div className="h-10 animate-pulse bg-gray-100 rounded-full w-28" />
-              <div className="h-10 animate-pulse bg-gray-100 rounded-full w-28" />
+              <div className="h-10 animate-pulse bg-[#1E293B] rounded-full w-28" />
+              <div className="h-10 animate-pulse bg-[#1E293B] rounded-full w-28" />
+              <div className="h-10 animate-pulse bg-[#1E293B] rounded-full w-28" />
             </>
           ) : individuals.length === 0 ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-slate-500">
               個体を登録してください →{" "}
               <Link href="/individuals/new" className="text-primary font-medium hover:underline">
                 個体一覧
@@ -712,8 +717,8 @@ export default function WeeklyCareMatrixPage() {
                     whitespace-nowrap transition-all
                     ${
                       isSelected
-                        ? "bg-primary text-white shadow-lg shadow-primary/30 font-bold"
-                        : "bg-white text-gray-500 border border-gray-100 font-medium"
+                        ? "bg-primary/15 text-primary border border-primary font-bold shadow-lg shadow-primary/10"
+                        : "bg-[#1E293B]/50 text-slate-400 border border-white/5 font-medium"
                     }
                   `}
                 >
@@ -725,25 +730,49 @@ export default function WeeklyCareMatrixPage() {
           )}
         </div>
 
+        {/* ═══ Quick Stats (static mock) ═══ */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                <Thermometer className="w-4 h-4 text-amber-400" />
+              </div>
+              <span className="text-xs font-bold text-slate-400">Temp Alert</span>
+            </div>
+            <p className="text-2xl font-black text-white">27.5°C</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">適温範囲内</p>
+          </div>
+          <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-yellow-500/15 flex items-center justify-center">
+                <Egg className="w-4 h-4 text-yellow-400" />
+              </div>
+              <span className="text-xs font-bold text-slate-400">Hatching</span>
+            </div>
+            <p className="text-2xl font-black text-white">3 eggs</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">残り14日 (予定)</p>
+          </div>
+        </div>
+
         {/* ═══ C. 週/月トグル ═══ */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">
+            <h2 className="text-lg font-bold text-white">
               {viewMode === "week" ? "ウィークリー" : "マンスリー"}
             </h2>
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-slate-500">
               {viewMode === "week"
                 ? `${today.getMonth() + 1}月`
                 : `${displayYear}年 ${displayMonth}月`}
             </span>
           </div>
-          <div className="bg-gray-200 p-1 rounded-lg flex">
+          <div className="bg-[#1E293B] p-1 rounded-lg flex border border-white/5">
             <button
               onClick={() => setViewMode("week")}
               className={`px-4 py-1 text-xs rounded transition-all ${
                 viewMode === "week"
-                  ? "bg-white text-gray-900 shadow-sm font-semibold"
-                  : "text-gray-500 font-medium"
+                  ? "bg-[#334155] text-white shadow-sm font-semibold"
+                  : "text-slate-500 font-medium"
               }`}
             >
               週
@@ -752,8 +781,8 @@ export default function WeeklyCareMatrixPage() {
               onClick={() => setViewMode("month")}
               className={`px-4 py-1 text-xs rounded transition-all ${
                 viewMode === "month"
-                  ? "bg-white text-gray-900 shadow-sm font-semibold"
-                  : "text-gray-500 font-medium"
+                  ? "bg-[#334155] text-white shadow-sm font-semibold"
+                  : "text-slate-500 font-medium"
               }`}
             >
               月
@@ -763,14 +792,14 @@ export default function WeeklyCareMatrixPage() {
 
         {/* ═══ D. マトリクス / カレンダー ═══ */}
         {loading ? (
-          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 p-4 space-y-2">
+          <div className="bg-[#1E293B]/70 backdrop-blur-[12px] rounded-2xl border border-white/5 p-4 space-y-2">
             {[...Array(7)].map((_, i) => (
-              <div key={i} className="h-8 bg-gray-100 rounded-lg animate-pulse" />
+              <div key={i} className="h-8 bg-[#0F172A]/50 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : individuals.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] border border-gray-100 p-8 text-center">
-            <p className="text-gray-400 text-sm">個体が登録されていません</p>
+          <div className="bg-[#1E293B]/70 backdrop-blur-[12px] rounded-2xl border border-white/5 p-8 text-center">
+            <p className="text-slate-500 text-sm">個体が登録されていません</p>
             <Link
               href="/individuals/new"
               className="text-primary text-sm font-medium mt-2 inline-block hover:underline"
@@ -780,17 +809,17 @@ export default function WeeklyCareMatrixPage() {
           </div>
         ) : viewMode === "week" ? (
           /* ─── D-1. 週間マトリクスカード ─── */
-          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] p-4 border border-gray-100">
+          <div className="bg-[#1E293B]/70 backdrop-blur-[12px] rounded-2xl p-4 border border-white/5">
             {/* ナビゲーション */}
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={() => setWeekOffset((w) => w - 1)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-slate-400">
                   第{weekNumber}週
                 </span>
                 {weekOffset !== 0 && (
@@ -804,7 +833,7 @@ export default function WeeklyCareMatrixPage() {
               </div>
               <button
                 onClick={() => setWeekOffset((w) => w + 1)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -822,12 +851,12 @@ export default function WeeklyCareMatrixPage() {
                   <div
                     key={date}
                     className={`flex flex-col items-center gap-0.5 py-1 ${
-                      isToday ? "bg-primary/10 rounded-t-xl" : ""
+                      isToday ? "bg-primary/5 rounded-t-xl" : ""
                     }`}
                   >
                     <span
                       className={`text-[10px] uppercase font-bold ${
-                        dayIndex === 0 ? "text-primary" : "text-gray-400"
+                        dayIndex === 0 ? "text-primary" : "text-slate-500"
                       }`}
                     >
                       {weekday}
@@ -837,7 +866,7 @@ export default function WeeklyCareMatrixPage() {
                         {day}
                       </span>
                     ) : (
-                      <span className="text-xs font-semibold text-gray-700">
+                      <span className="text-xs font-semibold text-slate-300">
                         {day}
                       </span>
                     )}
@@ -858,7 +887,7 @@ export default function WeeklyCareMatrixPage() {
                       >
                         <Icon className={`w-[15px] h-[15px] ${care.color}`} />
                       </div>
-                      <span className="text-[9px] font-medium text-[#64748b] leading-tight">
+                      <span className="text-[9px] font-medium text-slate-500 leading-tight">
                         {care.label}
                       </span>
                     </div>
@@ -876,14 +905,14 @@ export default function WeeklyCareMatrixPage() {
                           onClick={() => openModal(date)}
                           className={`h-8 flex items-center justify-center touch-manipulation ${
                             isToday
-                              ? `bg-primary/10 ${isLastRow ? "rounded-b-xl" : ""}`
+                              ? `bg-primary/5 ${isLastRow ? "rounded-b-xl" : ""}`
                               : ""
                           }`}
                         >
                           {dayEvents.length > 0 ? (
-                            <div className="w-2 h-2 bg-primary rounded-full" />
+                            <div className="w-2 h-2 bg-primary rounded-full shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
                           ) : isToday ? (
-                            <div className="w-2 h-2 bg-gray-200 rounded-full" />
+                            <div className="w-2 h-2 bg-slate-600 rounded-full" />
                           ) : null}
                         </button>
                       );
@@ -895,17 +924,17 @@ export default function WeeklyCareMatrixPage() {
           </div>
         ) : (
           /* ─── D-2. 月間カレンダー ─── */
-          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] p-4 border border-gray-100">
+          <div className="bg-[#1E293B]/70 backdrop-blur-[12px] rounded-2xl p-4 border border-white/5">
             {/* ナビゲーション */}
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={() => setMonthOffset((m) => m - 1)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-800">
+                <span className="text-sm font-bold text-slate-200">
                   {displayYear}年 {displayMonth}月
                 </span>
                 {monthOffset !== 0 && (
@@ -919,7 +948,7 @@ export default function WeeklyCareMatrixPage() {
               </div>
               <button
                 onClick={() => setMonthOffset((m) => m + 1)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -930,7 +959,7 @@ export default function WeeklyCareMatrixPage() {
               {WEEKDAYS.map((d) => (
                 <div
                   key={d}
-                  className="text-center text-xs font-semibold text-gray-400"
+                  className="text-center text-xs font-semibold text-slate-500"
                 >
                   {d}
                 </div>
@@ -956,14 +985,14 @@ export default function WeeklyCareMatrixPage() {
                     className={`h-16 rounded-xl p-1 flex flex-col items-center touch-manipulation transition-colors ${
                       isToday
                         ? "bg-primary/10 border-2 border-primary"
-                        : "bg-white border border-gray-100 hover:bg-gray-50"
+                        : "bg-[#0F172A]/40 border border-white/5 hover:bg-[#1E293B]"
                     }`}
                   >
                     <span
                       className={`text-xs ${
                         isToday
                           ? "text-primary font-bold"
-                          : "font-medium text-gray-700"
+                          : "font-medium text-slate-300"
                       }`}
                     >
                       {dayNum}
@@ -986,31 +1015,31 @@ export default function WeeklyCareMatrixPage() {
       <>
         {/* 背景オーバーレイ */}
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-[9998]"
+          className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-[9998]"
           onClick={() => setModalOpen(false)}
         />
 
         {/* シート本体 */}
         <div
-          className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2.5rem] shadow-[0_-8px_40px_rgba(0,0,0,0.15)] animate-slide-up z-[9999] max-h-[90vh] overflow-y-auto"
+          className="fixed bottom-0 left-0 right-0 bg-[#1E293B] rounded-t-[2.5rem] shadow-[0_-8px_40px_rgba(0,0,0,0.4)] animate-slide-up z-[9999] max-h-[90vh] overflow-y-auto"
         >
           {/* ドラッグハンドル */}
           <div className="flex justify-center pt-3 pb-2">
-            <div className="w-12 h-1.5 rounded-full bg-gray-300" />
+            <div className="w-12 h-1.5 rounded-full bg-slate-600" />
           </div>
 
           {/* ヘッダー */}
           <div className="flex items-center justify-between px-5 pb-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">記録の追加</h2>
-              <p className="text-sm text-gray-500">{formatModalDate(modalDate)}</p>
+              <h2 className="text-xl font-bold text-white">記録の追加</h2>
+              <p className="text-sm text-slate-400">{formatModalDate(modalDate)}</p>
             </div>
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              className="w-10 h-10 rounded-full bg-[#334155] flex items-center justify-center hover:bg-[#475569] transition-colors"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-slate-400" />
             </button>
           </div>
 
@@ -1025,7 +1054,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 1. 体調 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-3">体調</h3>
+                <h3 className="text-sm font-bold text-slate-300 mb-3">体調</h3>
                 <div className="flex gap-3 justify-center">
                   {CONDITION_LEVELS.map((c) => {
                     const isSelected = conditionInput === c.value;
@@ -1037,11 +1066,11 @@ export default function WeeklyCareMatrixPage() {
                         className={`flex flex-col items-center gap-1.5 py-3 px-5 rounded-2xl border-2 transition-all
                           ${isSelected
                             ? `${c.border} ${c.bg} ring-2 ${c.ring} scale-105`
-                            : "border-gray-200 bg-white"
+                            : "border-white/10 bg-[#0F172A]/30"
                           }`}
                       >
                         <span className="text-3xl">{c.emoji}</span>
-                        <span className={`text-xs font-medium ${isSelected ? c.color : "text-gray-500"}`}>{c.label}</span>
+                        <span className={`text-xs font-medium ${isSelected ? c.color : "text-slate-500"}`}>{c.label}</span>
                       </button>
                     );
                   })}
@@ -1050,31 +1079,31 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 2. 給餌 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-3">給餌</h3>
+                <h3 className="text-sm font-bold text-slate-300 mb-3">給餌</h3>
                 <Link
                   href={`/feeding?individual_id=${selectedId}&date=${modalDate}`}
                   onClick={() => setModalOpen(false)}
-                  className="flex items-center justify-between w-full p-4 bg-orange-50 rounded-2xl border border-orange-100 active:scale-[0.98] transition-transform"
+                  className="flex items-center justify-between w-full p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20 active:scale-[0.98] transition-transform"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                      <Utensils className="w-5 h-5 text-orange-500" />
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                      <Utensils className="w-5 h-5 text-orange-400" />
                     </div>
                     <div>
-                      <span className="text-sm font-bold text-slate-800">給餌を記録する</span>
-                      <p className="text-xs text-gray-500 mt-0.5">種類・量・サプリを入力</p>
+                      <span className="text-sm font-bold text-white">給餌を記録する</span>
+                      <p className="text-xs text-slate-500 mt-0.5">種類・量・サプリを入力</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                  <ChevronRight className="w-5 h-5 text-slate-500" />
                 </Link>
                 {feedingInputs.length > 0 && (
                   <div className="mt-3 space-y-1">
                     {feedingInputs.map((fi) => (
-                      <div key={fi.foodType} className="flex items-center gap-2 py-1.5 px-3 bg-white rounded-lg border border-gray-100 text-xs">
-                        <span className="font-medium text-gray-600">{fi.foodType}</span>
-                        <span className="text-gray-400">×</span>
-                        <span className="font-bold text-gray-800">{fi.quantity}</span>
-                        {fi.dusting && <span className="text-emerald-500 font-medium">Ca</span>}
+                      <div key={fi.foodType} className="flex items-center gap-2 py-1.5 px-3 bg-[#0F172A]/50 rounded-lg border border-white/10 text-xs">
+                        <span className="font-medium text-slate-300">{fi.foodType}</span>
+                        <span className="text-slate-500">×</span>
+                        <span className="font-bold text-white">{fi.quantity}</span>
+                        {fi.dusting && <span className="text-emerald-400 font-medium">Ca</span>}
                       </div>
                     ))}
                   </div>
@@ -1083,7 +1112,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 3. 排泄（うんち） */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-3">排泄</h3>
+                <h3 className="text-sm font-bold text-slate-300 mb-3">排泄</h3>
                 <div className="flex gap-2">
                   {[
                     { label: "普通", emoji: "💩" },
@@ -1095,10 +1124,10 @@ export default function WeeklyCareMatrixPage() {
                       type="button"
                       onClick={() => setPoopInput(poopInput === opt.label ? null : opt.label)}
                       className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
-                        ${poopInput === opt.label ? "border-primary bg-primary/10" : "border-gray-200 bg-white"}`}
+                        ${poopInput === opt.label ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
                     >
                       <span className="text-lg">{opt.emoji}</span>
-                      <span className="text-[10px] text-gray-500">{opt.label}</span>
+                      <span className="text-[10px] text-slate-500">{opt.label}</span>
                     </button>
                   ))}
                 </div>
@@ -1106,7 +1135,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 4. 尿酸 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-3">尿酸</h3>
+                <h3 className="text-sm font-bold text-slate-300 mb-3">尿酸</h3>
                 <div className="flex gap-2">
                   {[
                     { label: "白い", emoji: "⚪" },
@@ -1118,10 +1147,10 @@ export default function WeeklyCareMatrixPage() {
                       type="button"
                       onClick={() => setUrineInput(urineInput === opt.label ? null : opt.label)}
                       className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
-                        ${urineInput === opt.label ? "border-primary bg-primary/10" : "border-gray-200 bg-white"}`}
+                        ${urineInput === opt.label ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
                     >
                       <span className="text-lg">{opt.emoji}</span>
-                      <span className="text-[10px] text-gray-500">{opt.label}</span>
+                      <span className="text-[10px] text-slate-500">{opt.label}</span>
                     </button>
                   ))}
                 </div>
@@ -1129,7 +1158,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 5. 脱皮 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-3">脱皮</h3>
+                <h3 className="text-sm font-bold text-slate-300 mb-3">脱皮</h3>
                 <div className="flex gap-2">
                   {[
                     { label: "白濁",   emoji: "👁️" },
@@ -1141,10 +1170,10 @@ export default function WeeklyCareMatrixPage() {
                       type="button"
                       onClick={() => setShedInput(shedInput === opt.label ? null : opt.label)}
                       className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
-                        ${shedInput === opt.label ? "border-primary bg-primary/10" : "border-gray-200 bg-white"}`}
+                        ${shedInput === opt.label ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
                     >
                       <span className="text-lg">{opt.emoji}</span>
-                      <span className="text-[10px] text-gray-500">{opt.label}</span>
+                      <span className="text-[10px] text-slate-500">{opt.label}</span>
                     </button>
                   ))}
                 </div>
@@ -1152,28 +1181,28 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 6. 体重・体長 */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-3">体重・体長</h3>
+                <h3 className="text-sm font-bold text-slate-300 mb-3">体重・体長</h3>
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label className="text-[10px] text-gray-400 mb-1 block">体重 (g)</label>
+                    <label className="text-[10px] text-slate-500 mb-1 block">体重 (g)</label>
                     <input
                       type="number"
                       inputMode="decimal"
                       value={weightInput}
                       onChange={(e) => setWeightInput(e.target.value)}
                       placeholder="--"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                      className="w-full px-3 py-2.5 border border-white/10 bg-[#0F172A]/50 rounded-2xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="text-[10px] text-gray-400 mb-1 block">体長 (cm)</label>
+                    <label className="text-[10px] text-slate-500 mb-1 block">体長 (cm)</label>
                     <input
                       type="number"
                       inputMode="decimal"
                       value={lengthInput}
                       onChange={(e) => setLengthInput(e.target.value)}
                       placeholder="--"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                      className="w-full px-3 py-2.5 border border-white/10 bg-[#0F172A]/50 rounded-2xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
                     />
                   </div>
                 </div>
@@ -1181,7 +1210,7 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 7. ケアトグル（8項目） */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-3">ケア記録</h3>
+                <h3 className="text-sm font-bold text-slate-300 mb-3">ケア記録</h3>
                 <div className="grid grid-cols-4 gap-x-2 gap-y-6">
                   {CARE_TOGGLE_ITEMS.map((item) => {
                     const IconComp = item.icon;
@@ -1199,14 +1228,14 @@ export default function WeeklyCareMatrixPage() {
                           className={`w-16 h-16 rounded-2xl flex items-center justify-center border transition-all
                             ${isOn
                               ? `${item.bg} border-current ${item.color} ring-2 ring-current/20 scale-105`
-                              : "bg-gray-50 border-gray-200"
+                              : "bg-[#0F172A]/30 border-white/10"
                             }`}
                         >
-                          <IconComp className={`w-7 h-7 ${isOn ? item.color : "text-gray-300"}`} />
+                          <IconComp className={`w-7 h-7 ${isOn ? item.color : "text-slate-600"}`} />
                         </div>
                         <span
                           className={`text-xs font-bold ${
-                            isOn ? "text-gray-700" : "text-gray-400"
+                            isOn ? "text-slate-200" : "text-slate-500"
                           }`}
                         >
                           {item.label}
@@ -1220,13 +1249,13 @@ export default function WeeklyCareMatrixPage() {
 
               {/* 8. メモ */}
               <section>
-                <h3 className="text-sm font-bold text-gray-700 mb-3">メモ</h3>
+                <h3 className="text-sm font-bold text-slate-300 mb-3">メモ</h3>
                 <textarea
                   value={memoInput}
                   onChange={(e) => setMemoInput(e.target.value)}
                   placeholder="自由メモ（任意）"
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                  className="w-full px-4 py-3 border border-white/10 bg-[#0F172A]/50 rounded-2xl text-sm text-white placeholder:text-slate-600 resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
                 />
               </section>
 
