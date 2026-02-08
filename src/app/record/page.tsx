@@ -440,27 +440,6 @@ function RecordPageContent() {
           <section ref={feedingRef} id="feeding-section">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider pl-1 mb-4">給餌</h3>
 
-            {/* 既存の給餌レコード */}
-            {feedingSummary.length > 0 && (
-              <div className="flex items-center flex-wrap gap-2 mb-4">
-                {feedingSummary.map((f) => (
-                  <span
-                    key={f.id}
-                    className="inline-flex items-center px-3 py-1.5 rounded-lg bg-[#1E293B] border border-[#334155] text-xs text-slate-300"
-                  >
-                    {f.food_type} | {f.quantity}
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteFeeding(f.id)}
-                      className="ml-2 text-slate-500 hover:text-red-500 transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
             {/* 拒食チェック */}
             <button
               type="button"
@@ -573,6 +552,27 @@ function RecordPageContent() {
                 </button>
               </div>
             </div>
+
+            {/* 既存の給餌レコード */}
+            {feedingSummary.length > 0 && (
+              <div className="flex items-center flex-wrap gap-2 mt-4">
+                {feedingSummary.map((f) => (
+                  <span
+                    key={f.id}
+                    className="inline-flex items-center px-3 py-1.5 rounded-lg bg-[#1E293B] border border-[#334155] text-xs text-slate-300"
+                  >
+                    {f.food_type} | {f.quantity}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteFeeding(f.id)}
+                      className="ml-2 text-slate-500 hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* ── 3. 排泄 ── */}
