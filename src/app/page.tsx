@@ -33,7 +33,6 @@ import {
   Bath,
   Hospital,
   Brush,
-  Thermometer,
   Smile,
   Meh,
   Frown,
@@ -847,30 +846,6 @@ export default function WeeklyCareMatrixPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 space-y-4 pb-6">
-
-        {/* ═══ Quick Stats (static mock) ═══ */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
-                <Thermometer className="w-4 h-4 text-amber-400" />
-              </div>
-              <span className="text-xs font-bold text-slate-400">Temp Alert</span>
-            </div>
-            <p className="text-2xl font-black text-white">27.5°C</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">適温範囲内</p>
-          </div>
-          <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-yellow-500/15 flex items-center justify-center">
-                <Egg className="w-4 h-4 text-yellow-400" />
-              </div>
-              <span className="text-xs font-bold text-slate-400">Hatching</span>
-            </div>
-            <p className="text-2xl font-black text-white">3 eggs</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">残り14日 (予定)</p>
-          </div>
-        </div>
 
         {/* ═══ C. 週/月トグル ═══ */}
         <div className="flex items-center justify-between">
