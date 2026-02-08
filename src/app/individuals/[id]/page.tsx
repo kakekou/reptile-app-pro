@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Pencil,
+  MoreHorizontal,
   Camera,
   Plus,
   X,
@@ -142,6 +142,7 @@ function formatShortDate(dateStr: string): string {
 
 export default function IndividualDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [individual, setIndividual] = useState<Individual | null>(null);
@@ -156,6 +157,11 @@ export default function IndividualDetailPage() {
   const [lengthPeriod, setLengthPeriod] = useState('all');
   const [weightPeriod, setWeightPeriod] = useState('all');
   const [showFabMenu, setShowFabMenu] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showOwnerChange, setShowOwnerChange] = useState(false);
+  const [newOwnerId, setNewOwnerId] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -349,9 +355,33 @@ export default function IndividualDetailPage() {
               {individual.name}
             </p>
           </div>
-          <button className="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors">
-            <Pencil size={18} className="text-primary" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center transition-colors"
+            >
+              <MoreHorizontal size={18} className="text-white" />
+            </button>
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 top-full mt-2 z-50 w-48 bg-[#1E293B] border border-[#334155] rounded-xl shadow-lg shadow-black/20 overflow-hidden">
+                  <button
+                    onClick={() => { setShowMenu(false); setShowOwnerChange(true); }}
+                    className="w-full px-4 py-3 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-[#334155]"
+                  >
+                    オーナーの変更
+                  </button>
+                  <button
+                    onClick={() => { setShowMenu(false); setShowDeleteConfirm(true); }}
+                    className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-white/5 transition-colors"
+                  >
+                    削除
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -700,6 +730,83 @@ export default function IndividualDetailPage() {
             </div>
             <span className="text-sm font-bold text-white">体調</span>
           </Link>
+        </div>
+      )}
+
+      {/* ═══ 削除確認モーダル ═══ */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+          <div className="bg-[#1E293B] rounded-2xl p-6 mx-6 max-w-sm w-full border border-[#334155]">
+            <h3 className="text-lg font-bold text-white">個体を削除</h3>
+            <p className="text-sm text-slate-400 mt-2">
+              この個体のすべての記録（給餌・体重・健康ログなど）も削除されます。この操作は取り消せません。
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-3 rounded-xl bg-white/5 text-white text-sm font-medium"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={async () => {
+                  setDeleting(true);
+                  const supabase = createClient();
+                  const { error } = await supabase.from('individuals').delete().eq('id', id);
+                  if (!error) {
+                    router.push('/individuals');
+                  }
+                  setDeleting(false);
+                }}
+                disabled={deleting}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-bold disabled:opacity-50"
+              >
+                {deleting ? '削除中...' : '削除'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ オーナー変更モーダル ═══ */}
+      {showOwnerChange && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+          <div className="bg-[#1E293B] rounded-2xl p-6 mx-6 max-w-sm w-full border border-[#334155] relative">
+            <button
+              onClick={() => { setShowOwnerChange(false); setNewOwnerId(''); }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h3 className="text-lg font-bold text-white">オーナーの変更</h3>
+            <p className="text-sm text-slate-400 mt-2">
+              この個体の所有権を別のユーザーに変更します。この操作は取り消せません。新しいオーナーがあなたをチームに追加しない限り、この個体へのアクセス権を失います。
+            </p>
+            <p className="text-sm font-medium text-white mt-5 mb-2">ユーザーIDを入力</p>
+            <input
+              type="text"
+              value={newOwnerId}
+              onChange={(e) => setNewOwnerId(e.target.value)}
+              placeholder="新しいオーナーのユーザーIDを入力してください"
+              className="w-full px-4 py-3 rounded-xl bg-[#0F172A] border border-[#334155] text-white text-sm placeholder:text-slate-500 focus:border-primary focus:outline-none"
+            />
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={async () => {
+                  if (!newOwnerId.trim()) return;
+                  const supabase = createClient();
+                  const { error } = await supabase.from('individuals').update({ user_id: newOwnerId.trim() }).eq('id', id);
+                  if (!error) {
+                    router.push('/individuals');
+                  }
+                }}
+                disabled={!newOwnerId.trim()}
+                className="px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                次へ
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
