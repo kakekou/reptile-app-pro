@@ -33,6 +33,15 @@ import {
   Hospital,
   Brush,
   Thermometer,
+  Smile,
+  Meh,
+  Frown,
+  Circle,
+  Ban,
+  Eye,
+  Sparkles,
+  AlertTriangle,
+  Ruler,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -111,9 +120,9 @@ const CARE_ITEMS: CareItem[] = [
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 const CONDITION_LEVELS = [
-  { value: "絶好調", label: "好調", emoji: "😊", color: "text-emerald-400", border: "border-emerald-500/50", bg: "bg-emerald-500/15", ring: "ring-emerald-500/30" },
-  { value: "普通",   label: "普通", emoji: "😐", color: "text-slate-400",   border: "border-slate-500/50",   bg: "bg-slate-500/15",   ring: "ring-slate-500/30" },
-  { value: "不調",   label: "不調", emoji: "😞", color: "text-red-400",     border: "border-red-500/50",     bg: "bg-red-500/15",     ring: "ring-red-500/30" },
+  { value: "絶好調", label: "好調", icon: Smile, color: "text-emerald-400", border: "border-emerald-500/50", bg: "bg-emerald-500/15", ring: "ring-emerald-500/30" },
+  { value: "普通",   label: "普通", icon: Meh,   color: "text-slate-400",   border: "border-slate-500/50",   bg: "bg-slate-500/15",   ring: "ring-slate-500/30" },
+  { value: "不調",   label: "不調", icon: Frown, color: "text-red-400",     border: "border-red-500/50",     bg: "bg-red-500/15",     ring: "ring-red-500/30" },
 ];
 
 const CONDITION_MAP: Record<string, string> = Object.fromEntries(
@@ -1043,20 +1052,6 @@ export default function WeeklyCareMatrixPage() {
             </button>
           </div>
 
-          {/* フルページ入力リンク */}
-          {selectedId && (
-            <div className="px-5 pb-3">
-              <Link
-                href={`/record?individual_id=${selectedId}&date=${modalDate}`}
-                onClick={() => setModalOpen(false)}
-                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-white/10 bg-[#0F172A]/30 text-xs font-medium text-slate-400 hover:text-primary hover:border-primary/30 transition-colors"
-              >
-                フルページで入力
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          )}
-
           {/* ローディング */}
           {modalLoading ? (
             <div className="px-5 py-12 flex items-center justify-center">
@@ -1071,6 +1066,7 @@ export default function WeeklyCareMatrixPage() {
                 <h3 className="text-sm font-bold text-slate-300 mb-3">体調</h3>
                 <div className="flex gap-3 justify-center">
                   {CONDITION_LEVELS.map((c) => {
+                    const Icon = c.icon;
                     const isSelected = conditionInput === c.value;
                     return (
                       <button
@@ -1083,7 +1079,7 @@ export default function WeeklyCareMatrixPage() {
                             : "border-white/10 bg-[#0F172A]/30"
                           }`}
                       >
-                        <span className="text-3xl">{c.emoji}</span>
+                        <Icon className={`w-8 h-8 ${isSelected ? c.color : "text-slate-500"}`} />
                         <span className={`text-xs font-medium ${isSelected ? c.color : "text-slate-500"}`}>{c.label}</span>
                       </button>
                     );
@@ -1128,22 +1124,26 @@ export default function WeeklyCareMatrixPage() {
               <section>
                 <h3 className="text-sm font-bold text-slate-300 mb-3">排泄</h3>
                 <div className="flex gap-2">
-                  {[
-                    { label: "普通", emoji: "💩" },
-                    { label: "下痢", emoji: "💧" },
-                    { label: "なし", emoji: "❌" },
-                  ].map((opt) => (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => setPoopInput(poopInput === opt.label ? null : opt.label)}
-                      className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
-                        ${poopInput === opt.label ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
-                    >
-                      <span className="text-lg">{opt.emoji}</span>
-                      <span className="text-[10px] text-slate-500">{opt.label}</span>
-                    </button>
-                  ))}
+                  {([
+                    { label: "普通", icon: Circle },
+                    { label: "下痢", icon: Droplets },
+                    { label: "なし", icon: Ban },
+                  ] as const).map((opt) => {
+                    const Icon = opt.icon;
+                    const isSelected = poopInput === opt.label;
+                    return (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => setPoopInput(isSelected ? null : opt.label)}
+                        className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
+                          ${isSelected ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
+                      >
+                        <Icon className={`w-6 h-6 ${isSelected ? "text-primary" : "text-slate-500"}`} />
+                        <span className="text-[10px] text-slate-500">{opt.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -1151,22 +1151,33 @@ export default function WeeklyCareMatrixPage() {
               <section>
                 <h3 className="text-sm font-bold text-slate-300 mb-3">尿酸</h3>
                 <div className="flex gap-2">
-                  {[
-                    { label: "白い", emoji: "⚪" },
-                    { label: "黄色", emoji: "🟡" },
-                    { label: "なし", emoji: "❌" },
-                  ].map((opt) => (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => setUrineInput(urineInput === opt.label ? null : opt.label)}
-                      className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
-                        ${urineInput === opt.label ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
-                    >
-                      <span className="text-lg">{opt.emoji}</span>
-                      <span className="text-[10px] text-slate-500">{opt.label}</span>
-                    </button>
-                  ))}
+                  {([
+                    { label: "白い", type: "white" },
+                    { label: "黄色", type: "yellow" },
+                    { label: "なし", type: "none" },
+                  ] as const).map((opt) => {
+                    const isSelected = urineInput === opt.label;
+                    return (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => setUrineInput(isSelected ? null : opt.label)}
+                        className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
+                          ${isSelected ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
+                      >
+                        {opt.type === "white" && (
+                          <div className="w-6 h-6 rounded-full bg-white border-2 border-white" />
+                        )}
+                        {opt.type === "yellow" && (
+                          <div className="w-6 h-6 rounded-full bg-yellow-400 border-2 border-yellow-400" />
+                        )}
+                        {opt.type === "none" && (
+                          <Ban className={`w-6 h-6 ${isSelected ? "text-primary" : "text-slate-500"}`} />
+                        )}
+                        <span className="text-[10px] text-slate-500">{opt.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -1174,22 +1185,26 @@ export default function WeeklyCareMatrixPage() {
               <section>
                 <h3 className="text-sm font-bold text-slate-300 mb-3">脱皮</h3>
                 <div className="flex gap-2">
-                  {[
-                    { label: "白濁",   emoji: "👁️" },
-                    { label: "脱皮完了", emoji: "✨" },
-                    { label: "不完全", emoji: "⚠️" },
-                  ].map((opt) => (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => setShedInput(shedInput === opt.label ? null : opt.label)}
-                      className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
-                        ${shedInput === opt.label ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
-                    >
-                      <span className="text-lg">{opt.emoji}</span>
-                      <span className="text-[10px] text-slate-500">{opt.label}</span>
-                    </button>
-                  ))}
+                  {([
+                    { label: "白濁",   icon: Eye },
+                    { label: "脱皮完了", icon: Sparkles },
+                    { label: "不完全", icon: AlertTriangle },
+                  ] as const).map((opt) => {
+                    const Icon = opt.icon;
+                    const isSelected = shedInput === opt.label;
+                    return (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => setShedInput(isSelected ? null : opt.label)}
+                        className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-colors
+                          ${isSelected ? "border-primary bg-primary/10" : "border-white/10 bg-[#0F172A]/30"}`}
+                      >
+                        <Icon className={`w-6 h-6 ${isSelected ? "text-primary" : "text-slate-500"}`} />
+                        <span className="text-[10px] text-slate-500">{opt.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
 
