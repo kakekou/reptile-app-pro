@@ -1,636 +1,968 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  AreaChart,
-  Area,
+  ClipboardList,
+  Bell,
+  Utensils,
+  Brush,
+  Pill,
+  AlertTriangle,
+  Scale,
+  Ruler,
+  Layers,
+  Droplets,
+  Heart,
+  Bath,
+  Hand,
+  Trash2,
+  Hospital,
+} from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import {
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from 'recharts';
-import {
-  ChevronDown,
-  TrendingUp,
-  Egg,
-  Scale,
-  Ruler,
-  Calendar,
-  Heart,
-  ArrowRight,
-} from 'lucide-react';
-import { PageHeader } from '@/components/ui/page-header';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { createClient } from '@/lib/supabase/client';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
 
-/* ────────────────────────────────────────────
-   Types
-   ──────────────────────────────────────────── */
+// ── 定数 ──────────────────────────────────────────────
 
-interface IndividualOption {
+const LINE_COLORS = ['#10b77f', '#8b5cf6', '#3b82f6', '#f59e0b', '#ec4899', '#14b8a6', '#f43f5e', '#6366f1'];
+
+const SPECIES_SHORT: Record<string, string> = {
+  'ニシアフリカトカゲモドキ': 'ニシアフ',
+  'ヒョウモントカゲモドキ': 'レオパ',
+};
+
+const FEEDING_INTERVAL_DAYS: Record<string, number> = {
+  'ヒョウモントカゲモドキ': 3,
+  'ニシアフリカトカゲモドキ': 3,
+  'ボールパイソン': 7,
+  'フトアゴヒゲトカゲ': 1,
+};
+const DEFAULT_FEEDING_INTERVAL = 3;
+const CLEANING_INTERVAL = 7;
+const MEDICATION_INTERVAL = 7;
+
+const LOG_FILTER_TABS = [
+  { key: 'all', label: 'すべて' },
+  { key: 'feeding', label: '給餌' },
+  { key: 'poop', label: '排泄' },
+  { key: 'measurement', label: '体重' },
+  { key: 'cleaning', label: '掃除' },
+  { key: 'other', label: 'その他' },
+] as const;
+
+const RECORD_ICONS: Record<string, { icon: typeof Utensils; bg: string; color: string }> = {
+  feeding: { icon: Utensils, bg: 'bg-orange-500/10', color: 'text-orange-400' },
+  measurement: { icon: Scale, bg: 'bg-purple-500/15', color: 'text-purple-400' },
+  health: { icon: Heart, bg: 'bg-green-500/15', color: 'text-green-400' },
+  shed: { icon: Layers, bg: 'bg-blue-500/15', color: 'text-blue-400' },
+  poop: { icon: ClipboardList, bg: 'bg-yellow-500/15', color: 'text-yellow-400' },
+  urine: { icon: Droplets, bg: 'bg-yellow-500/15', color: 'text-yellow-400' },
+  cleaning: { icon: Brush, bg: 'bg-teal-500/10', color: 'text-teal-400' },
+  bathing: { icon: Bath, bg: 'bg-indigo-500/15', color: 'text-indigo-400' },
+  handling: { icon: Hand, bg: 'bg-pink-500/15', color: 'text-pink-400' },
+  water_change: { icon: Droplets, bg: 'bg-cyan-500/15', color: 'text-cyan-400' },
+  medication: { icon: Pill, bg: 'bg-red-500/10', color: 'text-red-400' },
+  hospital: { icon: Hospital, bg: 'bg-rose-500/15', color: 'text-rose-400' },
+  mating: { icon: Heart, bg: 'bg-pink-500/15', color: 'text-pink-400' },
+  egg_laying: { icon: ClipboardList, bg: 'bg-amber-500/15', color: 'text-amber-400' },
+};
+
+const RECORD_LABEL: Record<string, string> = {
+  feeding: '給餌',
+  measurement: '計測',
+  health: '体調記録',
+  shed: '脱皮',
+  poop: '排泄',
+  urine: '排尿',
+  cleaning: '掃除',
+  bathing: '入浴',
+  handling: 'ハンドリング',
+  water_change: '水替え',
+  medication: '投薬',
+  hospital: '通院',
+  mating: '交尾',
+  egg_laying: '産卵',
+};
+
+// ── 型 ────────────────────────────────────────────────
+
+interface IndividualBasic {
   id: string;
   name: string;
   species: string;
-  morph: string;
 }
 
-interface MeasurementRecord {
-  id: string;
+interface MeasurementRow {
+  individual_id: string;
   measured_on: string;
   weight_g: number | null;
   length_cm: number | null;
-  notes: string;
 }
 
-interface PairingRecord {
+interface FeedingRow {
   id: string;
-  paired_on: string;
-  confirmed: boolean;
-  notes: string;
-  partner_name: string;
-  partner_morph: string;
-  role: 'オス' | 'メス';
+  individual_id: string;
+  fed_at: string;
+  food_type: string;
 }
 
-interface ClutchRecord {
+interface CareLogRow {
   id: string;
-  laid_on: string;
-  egg_count: number;
-  fertile_count: number;
-  hatched_on: string | null;
-  hatch_count: number;
-  incubation_temp_c: number | null;
-  notes: string;
+  individual_id: string;
+  log_type: string;
+  logged_on: string;
 }
 
-/* ────────────────────────────────────────────
-   Tab Types
-   ──────────────────────────────────────────── */
+interface HealthLogRow {
+  id: string;
+  individual_id: string;
+  logged_on: string;
+  condition: string;
+}
 
-type Tab = 'growth' | 'breeding';
+interface ShedRow {
+  id: string;
+  individual_id: string;
+  shed_on: string;
+  completeness: string;
+}
 
-/* ────────────────────────────────────────────
-   Main Component
-   ──────────────────────────────────────────── */
+interface TimelineRecord {
+  id: string;
+  type: string;
+  date: string;
+  label: string;
+  detail: string;
+  individualName: string;
+}
+
+interface ScheduleItem {
+  individualName: string;
+  task: string;
+  taskType: 'feeding' | 'cleaning' | 'medication';
+  daysRemaining: number;
+}
+
+// ── ユーティリティ ────────────────────────────────────
+
+function daysBetween(dateStr: string, now: Date): number {
+  const d = new Date(dateStr);
+  return Math.floor((now.getTime() - d.getTime()) / 864e5);
+}
+
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+// ── メインページ ──────────────────────────────────────
 
 export default function ManagementPage() {
-  const [individuals, setIndividuals] = useState<IndividualOption[]>([]);
-  const [selectedId, setSelectedId] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<Tab>('growth');
+  const [loading, setLoading] = useState(true);
+  const [individuals, setIndividuals] = useState<IndividualBasic[]>([]);
+  const [measurements, setMeasurements] = useState<MeasurementRow[]>([]);
+  const [feedings, setFeedings] = useState<FeedingRow[]>([]);
+  const [careLogs, setCareLogs] = useState<CareLogRow[]>([]);
+  const [healthLogs, setHealthLogs] = useState<HealthLogRow[]>([]);
+  const [sheds, setSheds] = useState<ShedRow[]>([]);
 
-  // Growth tab state
-  const [metric, setMetric] = useState<'weight' | 'length'>('weight');
-  const [measurements, setMeasurements] = useState<MeasurementRecord[]>([]);
+  // Chart state
+  const [chartMetric, setChartMetric] = useState<'weight' | 'length'>('weight');
+  const [chartPeriod, setChartPeriod] = useState<'1m' | '3m' | 'all'>('all');
+  const [hiddenIndividuals, setHiddenIndividuals] = useState<Set<string>>(new Set());
 
-  // Breeding tab state
-  const [pairings, setPairings] = useState<PairingRecord[]>([]);
-  const [clutches, setClutches] = useState<ClutchRecord[]>([]);
+  // Log filter state
+  const [logFilter, setLogFilter] = useState('all');
 
-  // Load individuals list
+  // ── データ取得 ──
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .from('individuals')
-      .select('id, name, species, morph')
-      .eq('status', '飼育中')
-      .order('name')
-      .then(({ data }) => {
-        if (data) {
-          setIndividuals(data as IndividualOption[]);
-          if (data.length > 0) setSelectedId(data[0].id);
-        }
-      });
+    setLoading(true);
+
+    Promise.all([
+      supabase.from('individuals').select('id, name, species').eq('status', '飼育中').order('name'),
+      supabase.from('measurements').select('individual_id, measured_on, weight_g, length_cm').order('measured_on', { ascending: true }),
+      supabase.from('feedings').select('id, individual_id, fed_at, food_type').order('fed_at', { ascending: false }).limit(200),
+      supabase.from('care_logs').select('id, individual_id, log_type, logged_on').order('logged_on', { ascending: false }).limit(200),
+      supabase.from('health_logs').select('id, individual_id, logged_on, condition').order('logged_on', { ascending: false }).limit(200),
+      supabase.from('sheds').select('id, individual_id, shed_on, completeness').order('shed_on', { ascending: false }).limit(200),
+    ]).then(([indRes, measRes, feedRes, careRes, healthRes, shedRes]) => {
+      if (indRes.data) setIndividuals(indRes.data as IndividualBasic[]);
+      if (measRes.data) setMeasurements(measRes.data as MeasurementRow[]);
+      if (feedRes.data) setFeedings(feedRes.data as FeedingRow[]);
+      if (careRes.data) setCareLogs(careRes.data as CareLogRow[]);
+      if (healthRes.data) setHealthLogs(healthRes.data as HealthLogRow[]);
+      if (shedRes.data) setSheds(shedRes.data as ShedRow[]);
+      setLoading(false);
+    });
   }, []);
 
-  // Load data when individual or tab changes
-  useEffect(() => {
-    if (!selectedId) return;
+  // ── 個体名マップ ──
+  const nameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const ind of individuals) map[ind.id] = ind.name;
+    return map;
+  }, [individuals]);
 
-    if (activeTab === 'growth') {
-      loadGrowthData(selectedId);
-    } else {
-      loadBreedingData(selectedId);
-    }
-  }, [selectedId, activeTab]);
+  // ── 種名マップ ──
+  const speciesMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const ind of individuals) map[ind.id] = ind.species;
+    return map;
+  }, [individuals]);
 
-  const loadGrowthData = (id: string) => {
-    const supabase = createClient();
-    supabase
-      .from('measurements')
-      .select('id, measured_on, weight_g, length_cm, notes')
-      .eq('individual_id', id)
-      .order('measured_on', { ascending: true })
-      .then(({ data }) => {
-        if (data) setMeasurements(data as MeasurementRecord[]);
-      });
-  };
-
-  const loadBreedingData = async (id: string) => {
-    const supabase = createClient();
-
-    // Get individual's sex to determine role
-    const { data: ind } = await supabase
-      .from('individuals')
-      .select('sex')
-      .eq('id', id)
-      .single();
-
-    const sex = (ind as { sex: string } | null)?.sex;
-
-    // Load pairings where this individual is male or female
-    const { data: maleData } = await supabase
-      .from('pairings')
-      .select('id, paired_on, confirmed, notes, female:individuals!pairings_female_id_fkey(name, morph)')
-      .eq('male_id', id)
-      .order('paired_on', { ascending: false });
-
-    const { data: femaleData } = await supabase
-      .from('pairings')
-      .select('id, paired_on, confirmed, notes, male:individuals!pairings_male_id_fkey(name, morph)')
-      .eq('female_id', id)
-      .order('paired_on', { ascending: false });
-
-    const combined: PairingRecord[] = [];
-
-    if (maleData) {
-      for (const p of maleData) {
-        const partner = p.female as unknown as { name: string; morph: string } | null;
-        combined.push({
-          id: p.id,
-          paired_on: p.paired_on,
-          confirmed: p.confirmed,
-          notes: p.notes,
-          partner_name: partner?.name ?? '--',
-          partner_morph: partner?.morph ?? '',
-          role: 'オス',
-        });
-      }
-    }
-
-    if (femaleData) {
-      for (const p of femaleData) {
-        const partner = p.male as unknown as { name: string; morph: string } | null;
-        combined.push({
-          id: p.id,
-          paired_on: p.paired_on,
-          confirmed: p.confirmed,
-          notes: p.notes,
-          partner_name: partner?.name ?? '--',
-          partner_morph: partner?.morph ?? '',
-          role: 'メス',
-        });
-      }
-    }
-
-    combined.sort((a, b) => new Date(b.paired_on).getTime() - new Date(a.paired_on).getTime());
-    setPairings(combined);
-
-    // Load clutches from all pairings
-    const pairingIds = combined.map((p) => p.id);
-    if (pairingIds.length > 0) {
-      const { data: clutchData } = await supabase
-        .from('clutches')
-        .select('*')
-        .in('pairing_id', pairingIds)
-        .order('laid_on', { ascending: false });
-
-      if (clutchData) setClutches(clutchData as ClutchRecord[]);
-    } else {
-      setClutches([]);
-    }
-  };
-
-  const selectedIndividual = individuals.find((i) => i.id === selectedId);
-
-  return (
-    <>
-      <PageHeader title="管理" />
-
-      <div className="flex flex-col gap-4 px-5">
-        {/* ── 個体セレクター ── */}
-        <div className="relative">
-          <select
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="
-              w-full appearance-none
-              rounded-[14px] bg-white border border-gray-300 px-4 py-3 pr-10
-              text-[15px] text-text-primary font-medium
-              outline-none
-              focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue
-              transition-shadow
-            "
-          >
-            {individuals.map((ind) => (
-              <option key={ind.id} value={ind.id}>
-                {ind.name} ({ind.species === 'ニシアフリカトカゲモドキ' ? 'ニシアフ' : 'レオパ'})
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            size={18}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"
-          />
-        </div>
-
-        {/* ── タブ切替（セグメントコントロール） ── */}
-        <div className="flex rounded-[14px] bg-bg-tertiary p-1 gap-1">
-          <TabButton
-            active={activeTab === 'growth'}
-            onClick={() => setActiveTab('growth')}
-            icon={<TrendingUp size={15} />}
-            label="成長記録"
-          />
-          <TabButton
-            active={activeTab === 'breeding'}
-            onClick={() => setActiveTab('breeding')}
-            icon={<Egg size={15} />}
-            label="繁殖記録"
-          />
-        </div>
-
-        {/* ── コンテンツエリア ── */}
-        {activeTab === 'growth' ? (
-          <GrowthTab
-            measurements={measurements}
-            metric={metric}
-            onMetricChange={setMetric}
-          />
-        ) : (
-          <BreedingTab
-            pairings={pairings}
-            clutches={clutches}
-            individualName={selectedIndividual?.name ?? ''}
-          />
-        )}
-      </div>
-    </>
-  );
-}
-
-/* ────────────────────────────────────────────
-   Tab Button
-   ──────────────────────────────────────────── */
-
-function TabButton({
-  active,
-  onClick,
-  icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`
-        flex-1 flex items-center justify-center gap-1.5
-        rounded-[10px] py-2.5
-        text-[13px] font-semibold
-        transition-all
-        ${active
-          ? 'bg-white text-text-primary shadow-sm'
-          : 'text-text-tertiary hover:text-text-secondary'
-        }
-      `}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-/* ────────────────────────────────────────────
-   Growth Tab
-   ──────────────────────────────────────────── */
-
-function GrowthTab({
-  measurements,
-  metric,
-  onMetricChange,
-}: {
-  measurements: MeasurementRecord[];
-  metric: 'weight' | 'length';
-  onMetricChange: (m: 'weight' | 'length') => void;
-}) {
-  const key = metric === 'weight' ? 'weight_g' : 'length_cm';
-  const unit = metric === 'weight' ? 'g' : 'cm';
-  const color = metric === 'weight' ? '#2563eb' : '#059669';
-  const gradientId = `mgmt-gradient-${metric}`;
-
-  const chartData = measurements
-    .filter((d) => d[key] !== null)
-    .map((d) => ({
-      date: d.measured_on,
-      value: d[key] as number,
-      label: format(new Date(d.measured_on), 'M/d', { locale: ja }),
-    }));
-
-  // Calculate growth stats
-  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value : null;
-  const prevValue = chartData.length > 1 ? chartData[chartData.length - 2].value : null;
-  const growthDiff = latestValue !== null && prevValue !== null ? latestValue - prevValue : null;
-
-  return (
-    <>
-      {/* メトリック切替 */}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onMetricChange('weight')}
-          className={`flex-1 flex items-center justify-center gap-2 rounded-[14px] py-2.5 text-[13px] font-semibold transition-all ${
-            metric === 'weight'
-              ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
-              : 'bg-bg-tertiary text-text-tertiary'
-          }`}
-        >
-          <Scale size={15} />
-          体重 (g)
-        </button>
-        <button
-          type="button"
-          onClick={() => onMetricChange('length')}
-          className={`flex-1 flex items-center justify-center gap-2 rounded-[14px] py-2.5 text-[13px] font-semibold transition-all ${
-            metric === 'length'
-              ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
-              : 'bg-bg-tertiary text-text-tertiary'
-          }`}
-        >
-          <Ruler size={15} />
-          体長 (cm)
-        </button>
-      </div>
-
-      {/* 最新値サマリー */}
-      {latestValue !== null && (
-        <div className="flex items-baseline gap-2 px-1">
-          <span className="text-[32px] font-bold tracking-tight" style={{ color }}>
-            {latestValue}
-          </span>
-          <span className="text-[15px] text-text-secondary font-medium">{unit}</span>
-          {growthDiff !== null && (
-            <span
-              className={`text-[13px] font-semibold ml-1 ${
-                growthDiff > 0 ? 'text-emerald-600' : growthDiff < 0 ? 'text-rose-600' : 'text-text-tertiary'
-              }`}
-            >
-              {growthDiff > 0 ? '+' : ''}{growthDiff.toFixed(1)}{unit}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* チャート */}
-      <Card>
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.15} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis
-                dataKey="label"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: '#6b7280' }}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: '#6b7280' }}
-                domain={['dataMin - 2', 'dataMax + 2']}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                }}
-                labelStyle={{ color: '#6b7280' }}
-                formatter={(value) => [`${value} ${unit}`, metric === 'weight' ? '体重' : '体長']}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke={color}
-                strokeWidth={2.5}
-                fill={`url(#${gradientId})`}
-                dot={{ r: 3, fill: color, stroke: '#ffffff', strokeWidth: 2 }}
-                activeDot={{ r: 5, fill: color, stroke: '#ffffff', strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex items-center justify-center h-48 text-text-tertiary text-[14px]">
-            データがありません
-          </div>
-        )}
-      </Card>
-
-      {/* 計測履歴タイムライン */}
-      {measurements.length > 0 && (
-        <div>
-          <h3 className="text-[14px] font-semibold mb-3 text-text-secondary flex items-center gap-1.5">
-            <Calendar size={14} />
-            計測履歴
-          </h3>
-          <div className="flex flex-col gap-2">
-            {[...measurements].reverse().map((rec) => (
-              <div
-                key={rec.id}
-                className="rounded-[14px] bg-white border border-gray-200 shadow-sm p-3 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-[11px] text-text-tertiary">
-                      {format(new Date(rec.measured_on), 'M/d', { locale: ja })}
-                    </span>
-                    <span className="text-[10px] text-text-tertiary">
-                      {format(new Date(rec.measured_on), 'yyyy', { locale: ja })}
-                    </span>
-                  </div>
-                  <div className="w-px h-8 bg-gray-200" />
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-3">
-                      {rec.weight_g != null && (
-                        <span className="text-[13px] font-semibold text-blue-600">
-                          {rec.weight_g}g
-                        </span>
-                      )}
-                      {rec.length_cm != null && (
-                        <span className="text-[13px] font-semibold text-emerald-600">
-                          {rec.length_cm}cm
-                        </span>
-                      )}
-                    </div>
-                    {rec.notes && (
-                      <p className="text-[11px] text-text-tertiary mt-0.5">{rec.notes}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-/* ────────────────────────────────────────────
-   Breeding Tab
-   ──────────────────────────────────────────── */
-
-function BreedingTab({
-  pairings,
-  clutches,
-  individualName,
-}: {
-  pairings: PairingRecord[];
-  clutches: ClutchRecord[];
-  individualName: string;
-}) {
-  if (pairings.length === 0) {
+  // ── ローディング ──
+  if (loading) {
     return (
-      <div className="text-center py-16 text-text-tertiary text-[14px]">
-        繁殖記録がありません
+      <div className="bg-[#0F172A] min-h-dvh pb-32 text-white">
+        <header className="sticky top-0 z-50 bg-[#0F172A]/95 backdrop-blur-md border-b border-[#334155]">
+          <div className="max-w-lg mx-auto flex items-center justify-between px-4 h-14">
+            <div className="flex items-center gap-2">
+              <ClipboardList size={22} className="text-primary" />
+              <span className="text-xl font-bold text-white">管理</span>
+            </div>
+          </div>
+        </header>
+        <div className="max-w-lg mx-auto pt-20 px-4 flex flex-col gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-slate-700 animate-pulse rounded-2xl h-48" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      {/* ペアリング情報 */}
-      <div>
-        <h3 className="text-[14px] font-semibold mb-3 text-text-secondary flex items-center gap-1.5">
-          <Heart size={14} className="text-rose-600" />
-          ペアリング ({pairings.length}件)
-        </h3>
-        <div className="flex flex-col gap-3">
-          {pairings.map((p) => (
-            <Card key={p.id}>
-              <div className="flex items-center justify-between mb-3">
-                <Badge color={p.confirmed ? '#059669' : '#d97706'}>
-                  {p.confirmed ? '確認済み' : '未確認'}
-                </Badge>
-                <span className="text-[12px] text-text-tertiary">
-                  {format(new Date(p.paired_on), 'yyyy/M/d', { locale: ja })}
-                </span>
-              </div>
+    <div className="bg-[#0F172A] min-h-dvh pb-32 text-white">
+      {/* ═══ ヘッダー ═══ */}
+      <header className="sticky top-0 z-50 bg-[#0F172A]/95 backdrop-blur-md border-b border-[#334155]">
+        <div className="max-w-lg mx-auto flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-2">
+            <ClipboardList size={22} className="text-primary" />
+            <span className="text-xl font-bold text-white">管理</span>
+          </div>
+          <button className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors">
+            <Bell size={18} className="text-primary" />
+          </button>
+        </div>
+      </header>
 
-              <div className="flex items-center gap-3">
-                <div className="flex-1 rounded-[12px] bg-bg-tertiary p-3 text-center">
-                  <p className="text-[11px] text-blue-600 font-medium">
-                    {p.role === 'オス' ? individualName : p.partner_name}
-                  </p>
-                  <p className="text-[12px] font-bold mt-0.5">
-                    {p.role === 'オス' ? 'この個体' : p.partner_name}
-                  </p>
-                </div>
+      <div className="max-w-lg mx-auto pt-6 pb-24 px-4 flex flex-col gap-6">
+        {/* ═══ セクション1: 成長比較グラフ ═══ */}
+        <GrowthComparisonSection
+          individuals={individuals}
+          measurements={measurements}
+          nameMap={nameMap}
+          chartMetric={chartMetric}
+          setChartMetric={setChartMetric}
+          chartPeriod={chartPeriod}
+          setChartPeriod={setChartPeriod}
+          hiddenIndividuals={hiddenIndividuals}
+          setHiddenIndividuals={setHiddenIndividuals}
+        />
 
-                <ArrowRight size={14} className="text-text-tertiary shrink-0" />
+        {/* ═══ セクション2: スケジュール ═══ */}
+        <ScheduleSection
+          individuals={individuals}
+          feedings={feedings}
+          careLogs={careLogs}
+          speciesMap={speciesMap}
+          nameMap={nameMap}
+        />
 
-                <div className="flex-1 rounded-[12px] bg-bg-tertiary p-3 text-center">
-                  <p className="text-[11px] text-rose-600 font-medium">
-                    {p.role === 'メス' ? individualName : p.partner_name}
-                  </p>
-                  <p className="text-[12px] font-bold mt-0.5">
-                    {p.role === 'メス' ? 'この個体' : p.partner_name}
-                  </p>
-                </div>
-              </div>
+        {/* ═══ セクション3: ダッシュボード ═══ */}
+        <DashboardSection
+          individuals={individuals}
+          feedings={feedings}
+          healthLogs={healthLogs}
+          measurements={measurements}
+          careLogs={careLogs}
+          sheds={sheds}
+          nameMap={nameMap}
+        />
 
-              {p.notes && (
-                <p className="text-[12px] text-text-tertiary mt-2">{p.notes}</p>
-              )}
-            </Card>
+        {/* ═══ セクション4: 全体ログ ═══ */}
+        <ActivityLogSection
+          feedings={feedings}
+          careLogs={careLogs}
+          healthLogs={healthLogs}
+          sheds={sheds}
+          measurements={measurements}
+          nameMap={nameMap}
+          logFilter={logFilter}
+          setLogFilter={setLogFilter}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── セクション1: 成長比較グラフ ──────────────────────
+
+function GrowthComparisonSection({
+  individuals,
+  measurements,
+  nameMap,
+  chartMetric,
+  setChartMetric,
+  chartPeriod,
+  setChartPeriod,
+  hiddenIndividuals,
+  setHiddenIndividuals,
+}: {
+  individuals: IndividualBasic[];
+  measurements: MeasurementRow[];
+  nameMap: Record<string, string>;
+  chartMetric: 'weight' | 'length';
+  setChartMetric: (m: 'weight' | 'length') => void;
+  chartPeriod: '1m' | '3m' | 'all';
+  setChartPeriod: (p: '1m' | '3m' | 'all') => void;
+  hiddenIndividuals: Set<string>;
+  setHiddenIndividuals: (s: Set<string>) => void;
+}) {
+  const key = chartMetric === 'weight' ? 'weight_g' : 'length_cm';
+  const unit = chartMetric === 'weight' ? 'g' : 'cm';
+
+  // 期間フィルタ
+  const cutoff = useMemo(() => {
+    if (chartPeriod === 'all') return 0;
+    const ms: Record<string, number> = { '1m': 30 * 864e5, '3m': 90 * 864e5 };
+    return Date.now() - (ms[chartPeriod] ?? 0);
+  }, [chartPeriod]);
+
+  // 個体IDリスト (データがある個体のみ)
+  const individualIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const m of measurements) {
+      if (m[key] != null && m[key]! > 0) ids.add(m.individual_id);
+    }
+    return Array.from(ids).filter((id) => nameMap[id]);
+  }, [measurements, key, nameMap]);
+
+  // recharts用の統合データ: { date, [個体id]: value, ... }
+  const chartData = useMemo(() => {
+    const dateMap = new Map<string, Record<string, number | string>>();
+
+    for (const m of measurements) {
+      const val = m[key];
+      if (val == null || val <= 0) continue;
+      if (hiddenIndividuals.has(m.individual_id)) continue;
+      if (cutoff > 0 && new Date(m.measured_on).getTime() < cutoff) continue;
+
+      if (!dateMap.has(m.measured_on)) {
+        dateMap.set(m.measured_on, { date: m.measured_on });
+      }
+      dateMap.get(m.measured_on)![m.individual_id] = val;
+    }
+
+    return Array.from(dateMap.values()).sort((a, b) =>
+      (a.date as string).localeCompare(b.date as string)
+    );
+  }, [measurements, key, hiddenIndividuals, cutoff]);
+
+  const toggleIndividual = (id: string) => {
+    const next = new Set(hiddenIndividuals);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setHiddenIndividuals(next);
+  };
+
+  const periods: { key: '1m' | '3m' | 'all'; label: string }[] = [
+    { key: '1m', label: '1ヶ月' },
+    { key: '3m', label: '3ヶ月' },
+    { key: 'all', label: '全期間' },
+  ];
+
+  return (
+    <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 rounded-2xl p-5">
+      {/* ヘッダー */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-bold text-white">成長比較</h2>
+          <p className="text-xs text-slate-400">Growth Comparison</p>
+        </div>
+        {/* 体重/体長トグル */}
+        <div className="bg-slate-800 p-1 rounded-lg flex">
+          <button
+            onClick={() => setChartMetric('weight')}
+            className={`px-3 py-1 text-xs rounded-md transition-all ${
+              chartMetric === 'weight'
+                ? 'bg-white/10 text-primary font-bold'
+                : 'text-slate-400 font-medium'
+            }`}
+          >
+            体重
+          </button>
+          <button
+            onClick={() => setChartMetric('length')}
+            className={`px-3 py-1 text-xs rounded-md transition-all ${
+              chartMetric === 'length'
+                ? 'bg-white/10 text-primary font-bold'
+                : 'text-slate-400 font-medium'
+            }`}
+          >
+            体長
+          </button>
+        </div>
+      </div>
+
+      {/* 期間フィルタ */}
+      <div className="flex gap-1 mb-4">
+        <div className="bg-slate-800 p-1 rounded-lg flex">
+          {periods.map((pf) => (
+            <button
+              key={pf.key}
+              onClick={() => setChartPeriod(pf.key)}
+              className={`px-3 py-1 text-xs rounded-md transition-all ${
+                chartPeriod === pf.key
+                  ? 'bg-white/10 text-primary font-bold'
+                  : 'text-slate-400 font-medium'
+              }`}
+            >
+              {pf.label}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* クラッチ情報 */}
-      {clutches.length > 0 && (
-        <div>
-          <h3 className="text-[14px] font-semibold mb-3 text-text-secondary flex items-center gap-1.5">
-            <Egg size={14} className="text-amber-600" />
-            クラッチ ({clutches.length}件)
-          </h3>
-          <div className="flex flex-col gap-3">
-            {clutches.map((c) => (
-              <Card key={c.id}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[13px] font-semibold">
-                    産卵日: {format(new Date(c.laid_on), 'yyyy/M/d', { locale: ja })}
-                  </span>
-                  {c.hatched_on && (
-                    <Badge color="#059669">孵化済み</Badge>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <StatBlock label="産卵数" value={`${c.egg_count}個`} color="#d97706" />
-                  <StatBlock label="有精卵" value={`${c.fertile_count}個`} color="#059669" />
-                  {c.hatched_on && (
-                    <>
-                      <StatBlock label="孵化数" value={`${c.hatch_count}匹`} color="#2563eb" />
-                      <StatBlock
-                        label="孵化日"
-                        value={format(new Date(c.hatched_on), 'M/d', { locale: ja })}
-                        color="#6b7280"
-                      />
-                    </>
-                  )}
-                  {c.incubation_temp_c != null && (
-                    <StatBlock label="温度" value={`${c.incubation_temp_c}°C`} color="#e11d48" />
-                  )}
-                </div>
-
-                {c.notes && (
-                  <p className="text-[12px] text-text-tertiary mt-2">{c.notes}</p>
-                )}
-              </Card>
-            ))}
-          </div>
+      {/* グラフ */}
+      {chartData.length > 0 ? (
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: '#64748b', fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v: string) => formatShortDate(v)}
+            />
+            <YAxis
+              tick={{ fill: '#64748b', fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+              width={35}
+            />
+            <Tooltip
+              contentStyle={{
+                background: '#1E293B',
+                border: '1px solid #334155',
+                borderRadius: 12,
+                color: '#fff',
+              }}
+              labelFormatter={(v: unknown) => formatShortDate(String(v))}
+              formatter={(value: unknown, name: unknown) => [
+                `${value} ${unit}`,
+                nameMap[String(name)] ?? String(name),
+              ]}
+            />
+            {individualIds
+              .filter((id) => !hiddenIndividuals.has(id))
+              .map((id, i) => (
+                <Line
+                  key={id}
+                  type="monotone"
+                  dataKey={id}
+                  stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: LINE_COLORS[i % LINE_COLORS.length], stroke: '#1E293B', strokeWidth: 2 }}
+                  connectNulls
+                  name={id}
+                />
+              ))}
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="h-[240px] flex items-center justify-center text-sm text-slate-500">
+          データがありません
         </div>
       )}
-    </>
+
+      {/* 個体フィルターチップ */}
+      {individualIds.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-4">
+          {individualIds.map((id, i) => {
+            const isHidden = hiddenIndividuals.has(id);
+            return (
+              <button
+                key={id}
+                onClick={() => toggleIndividual(id)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs transition-all ${
+                  isHidden
+                    ? 'bg-slate-800 text-slate-500 line-through'
+                    : 'bg-slate-800 text-slate-200'
+                }`}
+              >
+                <div
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{
+                    backgroundColor: isHidden
+                      ? '#475569'
+                      : LINE_COLORS[i % LINE_COLORS.length],
+                  }}
+                />
+                {nameMap[id] ?? id}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
-/* ────────────────────────────────────────────
-   Shared Helpers
-   ──────────────────────────────────────────── */
+// ── セクション2: スケジュール ─────────────────────────
 
-function StatBlock({
-  label,
-  value,
-  color,
+function ScheduleSection({
+  individuals,
+  feedings,
+  careLogs,
+  speciesMap,
+  nameMap,
 }: {
-  label: string;
-  value: string;
-  color: string;
+  individuals: IndividualBasic[];
+  feedings: FeedingRow[];
+  careLogs: CareLogRow[];
+  speciesMap: Record<string, string>;
+  nameMap: Record<string, string>;
 }) {
+  const scheduleItems = useMemo(() => {
+    const now = new Date();
+    const items: ScheduleItem[] = [];
+
+    for (const ind of individuals) {
+      // 給餌スケジュール
+      const latestFeed = feedings.find((f) => f.individual_id === ind.id);
+      const feedingInterval = FEEDING_INTERVAL_DAYS[ind.species] ?? DEFAULT_FEEDING_INTERVAL;
+      if (latestFeed) {
+        const daysSince = daysBetween(latestFeed.fed_at.slice(0, 10), now);
+        items.push({
+          individualName: ind.name,
+          task: '給餌',
+          taskType: 'feeding',
+          daysRemaining: feedingInterval - daysSince,
+        });
+      } else {
+        items.push({
+          individualName: ind.name,
+          task: '給餌',
+          taskType: 'feeding',
+          daysRemaining: 0,
+        });
+      }
+
+      // 掃除スケジュール
+      const latestCleaning = careLogs.find(
+        (c) => c.individual_id === ind.id && c.log_type === 'cleaning'
+      );
+      if (latestCleaning) {
+        const daysSince = daysBetween(latestCleaning.logged_on, now);
+        items.push({
+          individualName: ind.name,
+          task: '掃除',
+          taskType: 'cleaning',
+          daysRemaining: CLEANING_INTERVAL - daysSince,
+        });
+      }
+
+      // 投薬スケジュール
+      const latestMed = careLogs.find(
+        (c) => c.individual_id === ind.id && c.log_type === 'medication'
+      );
+      if (latestMed) {
+        const daysSince = daysBetween(latestMed.logged_on, now);
+        items.push({
+          individualName: ind.name,
+          task: '投薬',
+          taskType: 'medication',
+          daysRemaining: MEDICATION_INTERVAL - daysSince,
+        });
+      }
+    }
+
+    // ソート: 期限超過 → 今日 → 未来
+    items.sort((a, b) => a.daysRemaining - b.daysRemaining);
+    return items;
+  }, [individuals, feedings, careLogs]);
+
+  const TASK_STYLE: Record<string, { icon: typeof Utensils; bg: string; color: string }> = {
+    feeding: { icon: Utensils, bg: 'bg-orange-500/10', color: 'text-orange-400' },
+    cleaning: { icon: Brush, bg: 'bg-teal-500/10', color: 'text-teal-400' },
+    medication: { icon: Pill, bg: 'bg-red-500/10', color: 'text-red-400' },
+  };
+
   return (
-    <div className="rounded-[10px] bg-bg-tertiary px-3 py-2">
-      <p className="text-[11px] text-text-tertiary">{label}</p>
-      <p className="text-[15px] font-bold" style={{ color }}>
-        {value}
-      </p>
+    <div>
+      <div className="mb-3">
+        <h2 className="text-lg font-bold text-white">スケジュール</h2>
+        <p className="text-xs text-slate-400">Upcoming Tasks</p>
+      </div>
+
+      {scheduleItems.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          {scheduleItems.slice(0, 10).map((item, i) => {
+            const style = TASK_STYLE[item.taskType];
+            const Icon = style.icon;
+            return (
+              <div
+                key={`${item.individualName}-${item.task}-${i}`}
+                className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 rounded-xl p-4 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-full ${style.bg} flex items-center justify-center shrink-0`}
+                  >
+                    <Icon size={18} className={style.color} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{item.individualName}</p>
+                    <p className="text-xs text-slate-400">{item.task}</p>
+                  </div>
+                </div>
+                <div>
+                  {item.daysRemaining < 0 ? (
+                    <span className="text-red-400 font-bold text-sm bg-red-500/10 px-2 py-0.5 rounded">
+                      {Math.abs(item.daysRemaining)}日超過
+                    </span>
+                  ) : item.daysRemaining === 0 ? (
+                    <span className="text-primary font-bold text-sm">今日</span>
+                  ) : (
+                    <span className="text-slate-300 text-sm">
+                      あと{item.daysRemaining}日
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 rounded-xl p-4 text-slate-500 text-sm text-center">
+          スケジュールはありません
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── セクション3: ダッシュボード ───────────────────────
+
+function DashboardSection({
+  individuals,
+  feedings,
+  healthLogs,
+  measurements,
+  careLogs,
+  sheds,
+  nameMap,
+}: {
+  individuals: IndividualBasic[];
+  feedings: FeedingRow[];
+  healthLogs: HealthLogRow[];
+  measurements: MeasurementRow[];
+  careLogs: CareLogRow[];
+  sheds: ShedRow[];
+  nameMap: Record<string, string>;
+}) {
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // 飼育中の個体数
+  const individualCount = individuals.length;
+
+  // 今月の記録数
+  const monthlyCount = useMemo(() => {
+    let count = 0;
+    for (const f of feedings) if (f.fed_at.startsWith(thisMonth)) count++;
+    for (const c of careLogs) if (c.logged_on.startsWith(thisMonth)) count++;
+    for (const s of sheds) if (s.shed_on.startsWith(thisMonth)) count++;
+    for (const m of measurements) if (m.measured_on.startsWith(thisMonth)) count++;
+    for (const h of healthLogs) if (h.logged_on.startsWith(thisMonth)) count++;
+    return count;
+  }, [feedings, careLogs, sheds, measurements, healthLogs, thisMonth]);
+
+  // 平均体重
+  const avgWeight = useMemo(() => {
+    const latestByInd = new Map<string, number>();
+    // measurements are sorted ascending, so last entry per individual is latest
+    for (const m of measurements) {
+      if (m.weight_g != null && m.weight_g > 0) {
+        latestByInd.set(m.individual_id, m.weight_g);
+      }
+    }
+    if (latestByInd.size === 0) return null;
+    const sum = Array.from(latestByInd.values()).reduce((a, b) => a + b, 0);
+    return Math.round(sum / latestByInd.size * 10) / 10;
+  }, [measurements]);
+
+  // 3日以上未給餌アラート
+  const feedingAlerts = useMemo(() => {
+    const alerts: { name: string; days: number }[] = [];
+    for (const ind of individuals) {
+      const latest = feedings.find((f) => f.individual_id === ind.id);
+      if (latest) {
+        const days = daysBetween(latest.fed_at.slice(0, 10), now);
+        if (days >= 3) alerts.push({ name: ind.name, days });
+      } else {
+        alerts.push({ name: ind.name, days: 999 });
+      }
+    }
+    return alerts.sort((a, b) => b.days - a.days);
+  }, [individuals, feedings]);
+
+  // 体調不良アラート
+  const healthAlerts = useMemo(() => {
+    const alerts: string[] = [];
+    const seen = new Set<string>();
+    for (const h of healthLogs) {
+      if (seen.has(h.individual_id)) continue;
+      seen.add(h.individual_id);
+      if (h.condition === '不調') {
+        alerts.push(nameMap[h.individual_id] ?? h.individual_id);
+      }
+    }
+    return alerts;
+  }, [healthLogs, nameMap]);
+
+  return (
+    <div>
+      <h2 className="text-lg font-bold text-white mb-3">ダッシュボード</h2>
+
+      {/* 統計カード 3列 */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 p-4 rounded-xl flex flex-col items-center gap-1">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">飼育中</span>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-2xl font-bold text-white">{individualCount}</span>
+            <span className="text-xs text-slate-400">匹</span>
+          </div>
+        </div>
+        <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 p-4 rounded-xl flex flex-col items-center gap-1">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">今月の記録</span>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-2xl font-bold text-white">{monthlyCount}</span>
+            <span className="text-xs text-slate-400">件</span>
+          </div>
+        </div>
+        <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 p-4 rounded-xl flex flex-col items-center gap-1">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">平均体重</span>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-2xl font-bold text-white">{avgWeight ?? '—'}</span>
+            {avgWeight != null && <span className="text-xs text-slate-400">g</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* アラート */}
+      <div className="flex flex-col gap-2">
+        {feedingAlerts.map((alert) => (
+          <div
+            key={alert.name}
+            className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3"
+          >
+            <AlertTriangle size={18} className="text-red-400 shrink-0" />
+            <span className="text-sm text-red-300">
+              {alert.name}: {alert.days >= 999 ? '給餌記録なし' : `${alert.days}日間未給餌`}
+            </span>
+          </div>
+        ))}
+
+        {healthAlerts.map((name) => (
+          <div
+            key={name}
+            className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center gap-3"
+          >
+            <AlertTriangle size={18} className="text-amber-400 shrink-0" />
+            <span className="text-sm text-amber-300">{name}: 体調不良</span>
+          </div>
+        ))}
+
+        {feedingAlerts.length === 0 && healthAlerts.length === 0 && (
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center gap-3">
+            <span className="text-sm text-primary font-medium">すべて正常です ✓</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── セクション4: 全体ログ ─────────────────────────────
+
+function ActivityLogSection({
+  feedings,
+  careLogs,
+  healthLogs,
+  sheds,
+  measurements,
+  nameMap,
+  logFilter,
+  setLogFilter,
+}: {
+  feedings: FeedingRow[];
+  careLogs: CareLogRow[];
+  healthLogs: HealthLogRow[];
+  sheds: ShedRow[];
+  measurements: MeasurementRow[];
+  nameMap: Record<string, string>;
+  logFilter: string;
+  setLogFilter: (f: string) => void;
+}) {
+  const allRecords = useMemo(() => {
+    const records: TimelineRecord[] = [];
+
+    for (const f of feedings.slice(0, 20)) {
+      records.push({
+        id: `f-${f.id}`,
+        type: 'feeding',
+        date: f.fed_at.slice(0, 10),
+        label: '給餌',
+        detail: f.food_type || '',
+        individualName: nameMap[f.individual_id] ?? '',
+      });
+    }
+    for (const s of sheds.slice(0, 20)) {
+      records.push({
+        id: `s-${s.id}`,
+        type: 'shed',
+        date: s.shed_on,
+        label: '脱皮',
+        detail: s.completeness || '',
+        individualName: nameMap[s.individual_id] ?? '',
+      });
+    }
+    for (const m of [...measurements].reverse().slice(0, 20)) {
+      const parts: string[] = [];
+      if (m.weight_g != null) parts.push(`${m.weight_g}g`);
+      if (m.length_cm != null) parts.push(`${m.length_cm}cm`);
+      records.push({
+        id: `m-${m.individual_id}-${m.measured_on}`,
+        type: 'measurement',
+        date: m.measured_on,
+        label: '計測',
+        detail: parts.join(' / '),
+        individualName: nameMap[m.individual_id] ?? '',
+      });
+    }
+    for (const h of healthLogs.slice(0, 20)) {
+      records.push({
+        id: `h-${h.id}`,
+        type: 'health',
+        date: h.logged_on,
+        label: '体調記録',
+        detail: h.condition || '',
+        individualName: nameMap[h.individual_id] ?? '',
+      });
+    }
+    for (const c of careLogs.slice(0, 20)) {
+      records.push({
+        id: `c-${c.id}`,
+        type: c.log_type,
+        date: c.logged_on,
+        label: RECORD_LABEL[c.log_type] ?? c.log_type,
+        detail: '',
+        individualName: nameMap[c.individual_id] ?? '',
+      });
+    }
+
+    records.sort((a, b) => b.date.localeCompare(a.date));
+    return records;
+  }, [feedings, sheds, measurements, healthLogs, careLogs, nameMap]);
+
+  // フィルター適用
+  const filtered = useMemo(() => {
+    if (logFilter === 'all') return allRecords;
+    if (logFilter === 'other') {
+      const mainTypes = ['feeding', 'poop', 'measurement', 'cleaning'];
+      return allRecords.filter((r) => !mainTypes.includes(r.type));
+    }
+    return allRecords.filter((r) => r.type === logFilter);
+  }, [allRecords, logFilter]);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold text-white">全体ログ</h2>
+        <button className="text-xs text-primary font-semibold">すべて見る</button>
+      </div>
+
+      {/* フィルタータブ */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-4 pb-1">
+        {LOG_FILTER_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setLogFilter(tab.key)}
+            className={`px-3 py-1 rounded-full text-xs whitespace-nowrap shrink-0 transition-all ${
+              logFilter === tab.key
+                ? 'bg-primary text-black font-bold'
+                : 'bg-slate-800 border border-[#334155] text-slate-400'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ログリスト */}
+      {filtered.length > 0 ? (
+        <div className="flex flex-col">
+          {filtered.slice(0, 20).map((rec, i) => {
+            const iconStyle = RECORD_ICONS[rec.type] ?? {
+              icon: ClipboardList,
+              bg: 'bg-slate-700',
+              color: 'text-slate-400',
+            };
+            const Icon = iconStyle.icon;
+            const isLast = i === Math.min(filtered.length, 20) - 1;
+
+            return (
+              <div key={rec.id} className="flex gap-3">
+                {/* タイムライン */}
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-9 h-9 rounded-full ${iconStyle.bg} flex items-center justify-center shrink-0`}
+                  >
+                    <Icon size={16} className={iconStyle.color} />
+                  </div>
+                  {!isLast && (
+                    <div className="w-px flex-1 bg-[#334155] my-1" />
+                  )}
+                </div>
+
+                {/* コンテンツ */}
+                <div className="flex-1 pb-4 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-white">{rec.label}</p>
+                      <span className="bg-slate-800 px-2 py-0.5 rounded text-[10px] text-slate-300">
+                        {rec.individualName}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-500 shrink-0">
+                      {formatShortDate(rec.date)}
+                    </span>
+                  </div>
+                  {rec.detail && (
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">{rec.detail}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-[#1E293B]/70 backdrop-blur-[12px] border border-white/5 rounded-xl p-4 text-slate-500 text-sm text-center">
+          記録がありません
+        </div>
+      )}
     </div>
   );
 }
