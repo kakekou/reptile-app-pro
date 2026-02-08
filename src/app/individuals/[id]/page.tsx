@@ -896,7 +896,7 @@ export default function IndividualDetailPage() {
             </div>
 
             {/* 保存ボタン */}
-            <div className="px-6 pb-6">
+            <div className="px-6 pb-32">
               <button
                 onClick={handleSaveEdit}
                 disabled={!editName.trim() || editSaving}
