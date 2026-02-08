@@ -537,39 +537,42 @@ export default function WeeklyCareMatrixPage() {
         { condition: conditionInput },
       );
 
-      // 2. 給餌 → feedings
-      if (refused) {
-        ops.push(
-          supabase.from('feedings').insert({
-            user_id: userId,
-            individual_id: selectedId,
-            fed_at: modalDate + 'T12:00:00',
-            food_type: 'なし',
-            quantity: 0,
-            refused: true,
-            dusting: false,
-            notes: '',
-          }).select().then(r => r)
-        );
-      } else if (foodType.trim()) {
-        const dustingValue = supplements.calcium || supplements.vitamin;
-        const noteParts: string[] = [];
-        if (supplements.calcium && supplements.vitamin) noteParts.push('calcium+vitamin');
-        else if (supplements.calcium) noteParts.push('calcium');
-        else if (supplements.vitamin) noteParts.push('vitamin');
-        if (feedUnit !== 'なし') noteParts.push(`unit:${feedUnit}`);
-        ops.push(
-          supabase.from('feedings').insert({
-            user_id: userId,
-            individual_id: selectedId,
-            fed_at: modalDate + 'T12:00:00',
-            food_type: foodType.trim(),
-            quantity: quantity ? Number(quantity) : 0,
-            refused: false,
-            dusting: dustingValue,
-            notes: noteParts.join(','),
-          }).select().then(r => r)
-        );
+      // 2. 給餌 → feedings（空欄時はスキップ）
+      const hasFeedingData = refused || foodType.trim() !== '' || (quantity !== '' && Number(quantity) > 0);
+      if (hasFeedingData) {
+        if (refused) {
+          ops.push(
+            supabase.from('feedings').insert({
+              user_id: userId,
+              individual_id: selectedId,
+              fed_at: modalDate + 'T12:00:00',
+              food_type: 'なし',
+              quantity: 0,
+              refused: true,
+              dusting: false,
+              notes: '',
+            }).select().then(r => r)
+          );
+        } else {
+          const dustingValue = supplements.calcium || supplements.vitamin;
+          const noteParts: string[] = [];
+          if (supplements.calcium && supplements.vitamin) noteParts.push('calcium+vitamin');
+          else if (supplements.calcium) noteParts.push('calcium');
+          else if (supplements.vitamin) noteParts.push('vitamin');
+          if (feedUnit !== 'なし') noteParts.push(`unit:${feedUnit}`);
+          ops.push(
+            supabase.from('feedings').insert({
+              user_id: userId,
+              individual_id: selectedId,
+              fed_at: modalDate + 'T12:00:00',
+              food_type: foodType.trim(),
+              quantity: quantity ? Number(quantity) : 0,
+              refused: false,
+              dusting: dustingValue,
+              notes: noteParts.join(','),
+            }).select().then(r => r)
+          );
+        }
       }
 
       // 3. 脱皮 → sheds

@@ -232,7 +232,7 @@ function RecordPageContent() {
 
   // ── 保存処理 ──
   async function handleSave() {
-    const hasFeeding = refused || (foodType.trim() !== '');
+    const hasFeeding = refused || foodType.trim() !== '' || (feedQuantity !== '' && Number(feedQuantity) > 0);
     const hasAny =
       condition !== null ||
       hasFeeding ||
