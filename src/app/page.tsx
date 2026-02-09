@@ -89,12 +89,7 @@ interface CareEvent {
   weight_g?: number;
 }
 
-interface FeedingInput {
-  foodType: string;
-  quantity: number;
-  dusting: boolean;
-  refused: boolean;
-}
+
 
 // ── 定数 ──────────────────────────────────────────────
 
@@ -345,7 +340,7 @@ export default function WeeklyCareMatrixPage() {
   const [modalDate, setModalDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [conditionInput, setConditionInput] = useState<string | null>(null);
-  const [feedingInputs, setFeedingInputs] = useState<FeedingInput[]>([]);
+
   const [foodType, setFoodType] = useState("");
   const [quantity, setQuantity] = useState("");
   const [feedUnit, setFeedUnit] = useState<string>("なし");
@@ -386,7 +381,7 @@ export default function WeeklyCareMatrixPage() {
   // ── モーダル関数 ──
   function resetAllInputs() {
     setConditionInput(null);
-    setFeedingInputs([]);
+
     setFoodType("");
     setQuantity("");
     setFeedUnit("なし");
@@ -439,12 +434,10 @@ export default function WeeklyCareMatrixPage() {
 
     // feedings
     if (feedRes.data && feedRes.data.length > 0) {
-      setFeedingInputs(feedRes.data.map((f: any) => ({
-        foodType: f.food_type,
-        quantity: f.quantity ?? 1,
-        dusting: false,
-        refused: f.refused ?? false,
-      })));
+      const first = feedRes.data[0];
+      setFoodType(first.refused ? '' : (first.food_type ?? ''));
+      setQuantity(first.refused ? '' : String(first.quantity ?? ''));
+      setRefused(first.refused ?? false);
       setExistingFeedingIds(feedRes.data.map((f: any) => f.id));
     }
 
@@ -537,8 +530,11 @@ export default function WeeklyCareMatrixPage() {
         { condition: conditionInput },
       );
 
-      // 2. 給餌 → feedings（空欄時はスキップ）
-      const hasFeedingData = refused || foodType.trim() !== '' || (quantity !== '' && Number(quantity) > 0);
+      // 2. 給餌 → feedings（既存レコードを削除してから新規挿入）
+      for (const fid of existingFeedingIds) {
+        ops.push(supabase.from('feedings').delete().eq('id', fid).then(r => r));
+      }
+      const hasFeedingData = refused || foodType.trim() !== '';
       if (hasFeedingData) {
         if (refused) {
           ops.push(
@@ -615,10 +611,10 @@ export default function WeeklyCareMatrixPage() {
       const errors = results.filter(r => r?.error);
       if (errors.length > 0) {
         console.error('Save errors:', errors.map(e => e.error));
-        // エラー時はロールバックして再fetch
         setEvents(previousEvents);
-        setRefetchCount(c => c + 1);
       }
+      // 保存後は常にDBから再取得して同期
+      setRefetchCount(c => c + 1);
 
     } catch (error) {
       console.error('Save error:', error);
